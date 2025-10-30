@@ -312,3 +312,8 @@
 [2025-10-30T07:37:24.654044+00:00] pubsub-consumer.INFO: Runtime: 1144s, Total processed: 8, Rate: 0.01 msg/s [] []
 [2025-10-30T07:37:48.156695+00:00] pubsub-consumer.INFO: Pulled 0 messages from subscription ckg_tb [] []
 [2025-10-30T07:37:48.157541+00:00] pubsub-consumer.INFO: No messages to process. [] []
+[2025-10-30T07:38:11.665458+00:00] pubsub-consumer.INFO: Pulled 0 messages from subscription ckg_tb [] []
+[2025-10-30T07:38:11.667299+00:00] pubsub-consumer.INFO: No messages to process. [] []
+[2025-10-30T07:38:35.420775+00:00] pubsub-consumer.INFO: Pulled 0 messages from subscription ckg_tb [] []
+[2025-10-30T07:38:35.421932+00:00] pubsub-consumer.INFO: No messages to process. [] []
+[2025-10-30T07:38:35.422350+00:00] pubsub-consumer.INFO: Runtime: 1215s, Total processed: 8, Rate: 0.01 msg/s [] []

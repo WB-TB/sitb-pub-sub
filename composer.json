@@ -4,7 +4,7 @@
     "type": "project",
     "require": {
         "php": ">=7.4",
-        "google/cloud-pubsub": "^1.4",
+        "google/cloud-pubsub": "^2.16",
         "monolog/monolog": "^2.0"
     },
     "autoload": {

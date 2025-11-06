@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c14c08a180d15f28022ddcde64ed75f5",
+    "content-hash": "9118e9c8ffe6ca585c9fe9b85706da9f",
     "packages": [
         {
             "name": "brick/math",
@@ -258,27 +258,27 @@
         },
         {
             "name": "google/cloud-pubsub",
-            "version": "v1.51.0",
+            "version": "v2.16.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/googleapis/google-cloud-php-pubsub.git",
-                "reference": "d95e3989f1bfe9a3d982df369a761ae3a9ad6aff"
+                "reference": "c20ffde5f7171c07ffcbeaf7712e28378e5a33f1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/googleapis/google-cloud-php-pubsub/zipball/d95e3989f1bfe9a3d982df369a761ae3a9ad6aff",
-                "reference": "d95e3989f1bfe9a3d982df369a761ae3a9ad6aff",
+                "url": "https://api.github.com/repos/googleapis/google-cloud-php-pubsub/zipball/c20ffde5f7171c07ffcbeaf7712e28378e5a33f1",
+                "reference": "c20ffde5f7171c07ffcbeaf7712e28378e5a33f1",
                 "shasum": ""
             },
             "require": {
-                "google/cloud-core": "^1.53",
-                "google/gax": "^1.26.0",
-                "php": ">=7.4"
+                "google/cloud-core": "^1.57",
+                "google/gax": "^1.38.0",
+                "php": "^8.1"
             },
             "require-dev": {
                 "erusev/parsedown": "^1.6",
                 "flix-tech/avro-php": "^5.0.0",
-                "phpdocumentor/reflection": "^5.3.3",
+                "phpdocumentor/reflection": "^5.3.3||^6.0",
                 "phpdocumentor/reflection-docblock": "^5.3",
                 "phpspec/prophecy-phpunit": "^2.0",
                 "phpunit/phpunit": "^9.0",
@@ -309,9 +309,9 @@
             ],
             "description": "Cloud PubSub Client for PHP",
             "support": {
-                "source": "https://github.com/googleapis/google-cloud-php-pubsub/tree/v1.51.0"
+                "source": "https://github.com/googleapis/google-cloud-php-pubsub/tree/v2.16.0"
             },
-            "time": "2024-01-26T20:27:24+00:00"
+            "time": "2025-10-20T22:38:13+00:00"
         },
         {
             "name": "google/common-protos",

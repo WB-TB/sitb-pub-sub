@@ -1,2 +1,2 @@
 # sitb-pub-sub
-Integrasi data SIBT dengan Google Pub/Sub 
+Integrasi data SITB dan ASIK CKG melalui Google Pub/Sub dan API

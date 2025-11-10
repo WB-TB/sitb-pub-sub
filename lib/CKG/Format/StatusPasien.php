@@ -14,7 +14,7 @@ class StatusPasien extends TbObject
     public $tanggal_selesai_pengobatan;
     public $hasil_akhir;
     
-    public static function fromArray(array $data): self
+    public function fromArray(array $data): self
     {
         $statusPasien = parent::fromArray($data);
         

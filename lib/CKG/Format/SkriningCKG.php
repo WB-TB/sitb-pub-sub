@@ -49,7 +49,7 @@ class SkriningCKG extends TbObject
     public $pemeriksaan_tb_bta;
     public $pemeriksaan_tb_tcm;
     
-    public static function fromArray(array $data): self
+    public function fromArray(array $data): self
     {
         $skriningCKG = parent::fromArray($data);
         

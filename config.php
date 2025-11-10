@@ -22,11 +22,29 @@ return [
         'sleep_time_between_pulls' => 5,
         'acknowledge_timeout' => 60, // seconds
         'retry_count' => 3,
-        'retry_delay' => 1 // seconds
+        'retry_delay' => 1, // seconds
+        'dead_letter_policy' => [
+            'enabled' => true,
+            'max_delivery_attempts' => 5,
+            'dead_letter_topic_suffix' => '-dead-letter'
+        ],
+        'flow_control' => [
+            'enabled' => true,
+            'max_outstanding_messages' => 1000,
+            'max_outstanding_bytes' => 1000000 // 1MB
+        ]
     ],
     'producer' => [
         'enable_message_ordering' => false,
-        'batch_size' => 100
+        'batch_size' => 100,
+        'message_attributes' => [
+            'source' => 'sitb-pubsub-client',
+            'version' => '1.0.0'
+        ],
+        'compression' => [
+            'enabled' => false,
+            'algorithm' => 'gzip'
+        ]
     ],
     'api' => [
         'base_url' => 'https://api-dev.dto.kemkes.go.id/fhir-sirs',
@@ -48,11 +66,13 @@ return [
         'producer' => '/var/log/sitb-ckg/producer.log',
     ],
     'ckg' => [
-        'table_skrining' => 'skrining_tb',
-        'table_incoming' => 'ckg_pubsub_incoming',
-        'table_outgoing' => 'ckg_pubsub_outgoing',
-        'table_processed' => 'ckg_pubsub_processed',
+        'table_skrining' => 'ta_skrining',
+        'table_incoming' => 'tmp_incoming_ckg',
+        'table_outgoing' => 'tmp_outgoing_ckg',
+        'table_processed' => 'tmp_processed_ckg',
         'marker_field' => 'transactionSource',
         'marker_value' => 'CKG-SITB',
+        'marker_consume' => 'STATUS-PASIEN-TB',
+		'marker_produce' => 'SKRINING-CKG-TB',
     ]
 ];

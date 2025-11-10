@@ -3,6 +3,7 @@
 namespace CKG;
 
 use Database\MySQL;
+use CKG\Format\PubSubObjectWrapper;
 use CKG\Format\SkriningCKG;
 use Monolog\Logger;
 
@@ -26,7 +27,7 @@ class Receiver
 
     public function prepare(array $rawMessages): array {;
         $validIds = $this->getExistingMessageIds(array_keys($rawMessages));
-        $updates = $this->getExistingData($rawMessages, $validIds);
+        // $updates = $this->getExistingData($rawMessages, $validIds);
         $valid = [];
         foreach ($rawMessages as $messageId => $message) {
             if (in_array($messageId, $validIds)) {
@@ -36,14 +37,15 @@ class Receiver
 
             try {
                 $data = $message->data();
-                $skrining = SkriningCKG::fromJson($data);
+                $skrining = PubSubObjectWrapper::NewConsume(SkriningCKG::class);
+                $skrining->fromJson($data);
                 
                 // Hanya proses objek CKG yang valid
                 if ($skrining->isCkgObject()) {
                     // sertakan info $skrining->pasien_ckg_id di database, apakah sudah ada atau belum
                     // jika belum ada (nil), maka ini pesan baru
                     // berisi array dengan kombinasi index-0 $skrining, index-1 $message, index-2 record db skrining.id (null jika baru)
-                    $valid[$messageId] = [$skrining, $message, isset($updates[$skrining->pasien_ckg_id]) ? $updates[$skrining->pasien_ckg_id] : null];
+                    $valid[$messageId] = [$skrining, $message];
                 }
 
                 $this->logNewMessage($messageId, $data, $message->attributes());
@@ -55,7 +57,7 @@ class Receiver
         return $valid;
     }
 
-    public function listen($skrining, $message, $skriningId = null): bool{
+    public function listen($skrining, $message): bool{
         try {
             // Hanya proses objek CKG yang valid
             if ($skrining->isCkgObject()) {
@@ -69,7 +71,7 @@ class Receiver
                 echo "  Data: {$data}\n";
                 echo "  Attributes: " . json_encode($attributes) . "\n";
 
-                $this->saveToDatabase($skrining, $skriningId);
+                $this->saveToDatabase($skrining);
 
                 // Return true to acknowledge, false to leave for retry
                 return true;
@@ -109,9 +111,11 @@ class Receiver
 
             try {
                 $data = $message->data();
-                $skrining = SkriningCKG::fromJson($data);
+                $skrining = PubSubObjectWrapper::NewConsume(SkriningCKG::class);
+                $skrining->fromJson($data);
+                // $skrining = SkriningCKG::fromJson($data);
                 if ($skrining->isCkgObject() && isset($skrining->pasien_ckg_id)) {
-                    $exists[] = $skrining->pasien_ckg_id;
+                    // $exists[] = $skrining->pasien_ckg_id;
                 }
             } catch (\Exception $e) {
                 $this->logger->warning("Error preparing message {$messageId}: " . $e->getMessage());
@@ -162,16 +166,17 @@ class Receiver
         } else {
             $keyPlaceholders = implode(', ', array_keys($data));
             $valuePlaceholders = implode(', ', array_fill(0, count($data), '?'));
-            $query = "INSERT INTO {$skriningTable} (ckg_id, {$keyPlaceholders}, created_at) VALUES (?, {$valuePlaceholders}, NOW())";
+            $query = "INSERT INTO {$skriningTable} (id, ckg_id, {$keyPlaceholders}, created_at) VALUES (?, {$valuePlaceholders}, NOW())";
             $params = array_merge($skrining->pasien_ckg_id, array_values($data));
 
             $stmt = $this->db->prepare($query);
             $stmt->execute($params);
             $skriningId = $this->db->lastInsertId();
 
-            $query2 = "INSERT INTO {$this->processedTable} (id, ckg_id, processed_at) VALUES (?, ?, NOW())";
+            $processedTable = $this->processedTable;
+            $query2 = "INSERT INTO {$processedTable} (id, ckg_id, processed_at) VALUES (?, ?, NOW())";
             $stmt2 = $this->db->prepare($query2);
-            $stmt2->execute([$skriningId, $skrining->pasien_ckg_id]);
+            $stmt2->execute([$skrining->pasien_ckg_id, $skrining->pasien_ckg_id]);
 
             $this->logger->debug("New Skrining saved with ID: {$skriningId}");
         }

@@ -5,6 +5,9 @@ class Producer extends Client
 {
     private $enableMessageOrdering;
     private $batchSize;
+    private $defaultAttributes;
+    private $compressionEnabled;
+    private $compressionAlgorithm;
 
     public function __construct(array $config)
     {
@@ -13,6 +16,9 @@ class Producer extends Client
         // Set producer configuration
         $this->enableMessageOrdering = $this->config['producer']['enable_message_ordering'];
         $this->batchSize = $this->config['producer']['batch_size'];
+        $this->defaultAttributes = $this->config['producer']['message_attributes'];
+        $this->compressionEnabled = $this->config['producer']['compression']['enabled'];
+        $this->compressionAlgorithm = $this->config['producer']['compression']['algorithm'];
     }
 
     /**
@@ -34,6 +40,21 @@ class Producer extends Client
             return false;
         }
 
+        // Merge with default attributes
+        $finalAttributes = array_merge($this->defaultAttributes, $attributes, ['environment' => $this->config['environment']]);
+        
+        // Add timestamp if not provided
+        if (!isset($finalAttributes['timestamp'])) {
+            $finalAttributes['timestamp'] = (string) time();
+        }
+
+        // Apply compression if enabled
+        if ($this->compressionEnabled) {
+            $messageData = $this->compressMessage($messageData);
+            $finalAttributes['compressed'] = 'true';
+            $finalAttributes['compression'] = $this->compressionAlgorithm;
+        }
+
         for ($attempt = 1; $attempt <= 3; $attempt++) {
             try {
                 $topic = $this->pubSubClient->topic($this->topicName);
@@ -41,12 +62,12 @@ class Producer extends Client
                 // Prepare message with ordering if enabled
                 $publishOptions = [
                     'data' => $messageData,
-                    'attributes' => $attributes
+                    'attributes' => $finalAttributes
                 ];
 
                 // Add ordering key if message ordering is enabled
-                if ($this->enableMessageOrdering && !empty($attributes['ordering_key'])) {
-                    $publishOptions['orderingKey'] = $attributes['ordering_key'];
+                if ($this->enableMessageOrdering && !empty($finalAttributes['ordering_key'])) {
+                    $publishOptions['orderingKey'] = $finalAttributes['ordering_key'];
                 }
 
                 // Publish the message
@@ -75,6 +96,44 @@ class Producer extends Client
         }
         
         return false;
+    }
+
+    /**
+     * Compress message data
+     *
+     * @param string $messageData
+     * @return string
+     */
+    private function compressMessage($messageData)
+    {
+        if ($this->compressionAlgorithm === 'gzip') {
+            return gzencode($messageData);
+        }
+        
+        // Add other compression algorithms as needed
+        return $messageData;
+    }
+
+    /**
+     * Set custom attributes for a message
+     *
+     * @param array $attributes
+     * @return void
+     */
+    public function setDefaultAttributes(array $attributes)
+    {
+        $this->defaultAttributes = array_merge($this->defaultAttributes, $attributes);
+    }
+
+    /**
+     * Enable or disable message compression
+     *
+     * @param bool $enabled
+     * @return void
+     */
+    public function setCompressionEnabled($enabled)
+    {
+        $this->compressionEnabled = $enabled;
     }
 
     /**

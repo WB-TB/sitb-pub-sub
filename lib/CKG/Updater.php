@@ -4,6 +4,7 @@ namespace CKG;
 
 use Database\MySQL;
 use PubSub\Producer;
+use CKG\Format\PubSubObjectWrapper;
 use CKG\Format\StatusPasien;
 use Monolog\Logger;
 use Api\Client as ApiClient;
@@ -81,7 +82,8 @@ class Updater
 
         //TODO: Implementasi pengambilan data dari database berdasarkan rentang waktu $start dan $end
 
-        $status[] = StatusPasien::fromArray([
+        $statusPasien = new StatusPasien();
+        $status[] = $statusPasien->fromArray([
             'terduga_id' => '123',
             'pasien_nik' => '3403011703850005',
             'pasien_tb_id' => '123-ab',
@@ -118,9 +120,8 @@ class Updater
     private function buildMessages(array $data) {
         // Implementasi pembuatan message dari data untuk dikirim via PubSub Producer
         $messages = [];
-        foreach ($data as $statusPasien) {
-            $messages[] = $statusPasien->__toString();
-        }
+        $status = PubSubObjectWrapper::NewProduce(StatusPasien::class, $data);
+        $messages[] = $status->toJson();
 
         return $messages;
     }

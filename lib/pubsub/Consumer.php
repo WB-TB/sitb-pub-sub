@@ -7,6 +7,12 @@ class Consumer extends Client
     private $sleepTimeBetweenPulls;
     private $retryCount;
     private $retryDelay;
+    private $deadLetterEnabled;
+    private $maxDeliveryAttempts;
+    private $deadLetterTopicSuffix;
+    private $flowControlEnabled;
+    private $maxOutstandingMessages;
+    private $maxOutstandingBytes;
 
     public function __construct(array $config)
     {
@@ -17,6 +23,16 @@ class Consumer extends Client
         $this->sleepTimeBetweenPulls = $this->config['consumer']['sleep_time_between_pulls'];
         $this->retryCount = $this->config['consumer']['retry_count'];
         $this->retryDelay = $this->config['consumer']['retry_delay'];
+        
+        // Dead letter policy configuration
+        $this->deadLetterEnabled = $this->config['consumer']['dead_letter_policy']['enabled'];
+        $this->maxDeliveryAttempts = $this->config['consumer']['dead_letter_policy']['max_delivery_attempts'];
+        $this->deadLetterTopicSuffix = $this->config['consumer']['dead_letter_policy']['dead_letter_topic_suffix'];
+        
+        // Flow control configuration
+        $this->flowControlEnabled = $this->config['consumer']['flow_control']['enabled'];
+        $this->maxOutstandingMessages = $this->config['consumer']['flow_control']['max_outstanding_messages'];
+        $this->maxOutstandingBytes = $this->config['consumer']['flow_control']['max_outstanding_bytes'];
     }
 
     /**
@@ -117,6 +133,20 @@ class Consumer extends Client
     public function processMessages(callable $inspector, callable $runner, $maxMessages = null)
     {
         $maxMessages = $maxMessages ?: $this->maxMessagesPerPull;
+        
+        // Apply flow control if enabled
+        if ($this->flowControlEnabled) {
+            $outstandingMessages = $this->getOutstandingMessageCount();
+            if ($outstandingMessages >= $this->maxOutstandingMessages) {
+                $this->logger->warning("Flow control: Outstanding messages ({$outstandingMessages}) reached limit ({$this->maxOutstandingMessages}). Skipping pull.");
+                return 0;
+            }
+            
+            // Adjust maxMessages based on available capacity
+            $availableCapacity = $this->maxOutstandingMessages - $outstandingMessages;
+            $maxMessages = min($maxMessages, $availableCapacity);
+        }
+        
         $messages = $this->pull($maxMessages);
         $processedCount = 0;
         $failedMessages = [];
@@ -140,13 +170,17 @@ class Consumer extends Client
 
         foreach ($valid as $messageId => $messageWrapper) {
             try {
-                list($skrining, $message, $skriningId) = $messageWrapper;
+                list($skrining, $message) = $messageWrapper;
                 $messageData = $message->data();
-                // $attributes = $message->attributes();
-                // $ackId = $message->ackId();
+                $attributes = $message->attributes();
+                
+                // Decompress message if needed
+                if (!empty($attributes['compressed']) && $attributes['compressed'] === 'true') {
+                    $messageData = $this->decompressMessage($messageData, $attributes['compression'] ?? 'gzip');
+                }
 
                 // jalankan callback runner
-                $result = $runner($skrining, $message, $skriningId);
+                $result = $runner($skrining, $message);
 
                 if ($result === true) {
                     // Acknowledge the message if callback returns true
@@ -156,12 +190,22 @@ class Consumer extends Client
                 } else {
                     $failedMessages[] = $message;
                     $this->logger->warning("Message processing failed, not acknowledging. Data: {$messageData}");
+                    
+                    // Handle dead letter if enabled
+                    if ($this->deadLetterEnabled) {
+                        $this->handleDeadLetter($message);
+                    }
                 }
 
             } catch (\Exception $e) {
                 $failedMessages[] = $message;
                 $this->logger->error("Error processing message: " . $e->getMessage());
                 // Don't acknowledge failed messages so they can be retried
+                
+                // Handle dead letter if enabled
+                if ($this->deadLetterEnabled) {
+                    $this->handleDeadLetter($message);
+                }
             }
         }
 
@@ -179,6 +223,75 @@ class Consumer extends Client
         $this->logger->info("Processed {$processedCount}/" . count($messages) . " messages ({$successRate}% success rate) in " . round($processingTime, 2) . "s");
 
         return $processedCount;
+    }
+
+    /**
+     * Decompress message data
+     *
+     * @param string $messageData
+     * @param string $algorithm
+     * @return string
+     */
+    private function decompressMessage($messageData, $algorithm = 'gzip')
+    {
+        if ($algorithm === 'gzip') {
+            return gzdecode($messageData);
+        }
+        
+        // Add other decompression algorithms as needed
+        return $messageData;
+    }
+
+    /**
+     * Handle dead letter queue for failed messages
+     *
+     * @param mixed $message
+     * @return void
+     */
+    private function handleDeadLetter($message)
+    {
+        try {
+            $deadLetterTopicName = $this->topicName . $this->deadLetterTopicSuffix;
+            $deadLetterTopic = $this->pubSubClient->topic($deadLetterTopicName);
+            
+            // Create dead letter topic if it doesn't exist
+            if (!$deadLetterTopic->exists()) {
+                $deadLetterTopic->create();
+                $this->logger->info("Created dead letter topic: {$deadLetterTopicName}");
+            }
+            
+            // Publish to dead letter topic
+            $deadLetterTopic->publish([
+                'data' => $message->data(),
+                'attributes' => array_merge($message->attributes(), [
+                    'original_subscription' => $this->subscriptionName,
+                    'dead_letter_timestamp' => (string) time(),
+                    'attempts' => '1' // This would need to be tracked properly
+                ])
+            ]);
+            
+            $this->logger->info("Message sent to dead letter queue: {$deadLetterTopicName}");
+            
+        } catch (\Exception $e) {
+            $this->logger->error("Failed to send message to dead letter queue: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get the count of outstanding messages
+     *
+     * @return int
+     */
+    private function getOutstandingMessageCount()
+    {
+        try {
+            $subscription = $this->pubSubClient->subscription($this->subscriptionName);
+            $info = $subscription->info();
+            return $info['acknowledgementDeadlineCount'] ?? 0;
+        } catch (\Exception $e) {
+            $this->logger->warning("Failed to get outstanding message count: " . $e->getMessage());
+            return 0;
+        }
     }
 
     /**

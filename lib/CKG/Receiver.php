@@ -172,7 +172,7 @@ class Receiver
         } else {
             $keyPlaceholders = implode(', ', array_keys($data));
             $valuePlaceholders = implode(', ', array_fill(0, count($data), '?'));
-            $query = "INSERT INTO {$skriningTable} (id, ckg_id, {$keyPlaceholders}, created_at) VALUES (?, {$valuePlaceholders}, NOW())";
+            $query = "INSERT INTO {$skriningTable} (ckg_id, {$keyPlaceholders}, created_at) VALUES (?, {$valuePlaceholders}, NOW())";
             $params = array_merge([$skrining->pasien_ckg_id], array_values($data));
 
             $stmt = $this->db->prepare($query);

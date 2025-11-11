@@ -40,7 +40,7 @@ class TaSkrining
     {
         try {
             $data = $skrining->toDbRecord();
-            if (isset($data['ckg_id']))
+            if (!isset($data['ckg_id']))
                 throw new \Exception('Data tidak memiliki Pasien ID CKG');
             
             $row = $this->findByCkgId($data['ckg_id']);

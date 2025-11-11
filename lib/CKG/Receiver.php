@@ -158,9 +158,8 @@ class Receiver
     }
 
     private function saveToDatabase(SkriningCKG $skrining) {
-        $data = $skrining->toDbRecord();
+        // $data = $skrining->toDbRecord();
         // $skriningTable = $this->skriningTable;
-
 
         list($skriningId, $update) = $this->skriningModel->save($skrining);
         if ($skriningId) {

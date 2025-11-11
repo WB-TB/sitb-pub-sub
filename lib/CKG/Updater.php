@@ -3,6 +3,7 @@
 namespace CKG;
 
 use Database\MySQL;
+use Database\LapTbc03;
 use PubSub\Producer;
 use CKG\Format\PubSubObjectWrapper;
 use CKG\Format\StatusPasien;
@@ -16,12 +17,14 @@ class Updater
     private Logger $logger;
     private Producer $producer;
     private $outgoingTable;
+    private LapTbc03 $laporan;
 
     public function __construct(MySQL $db, array $config) {
         $this->db = $db;
         $this->config = $config;
         $this->logger = \Boot::getLogger();
         $this->outgoingTable = $this->config['ckg']['table_outgoing'] ?? 'ckg_pubsub_outgoing';
+        $this->laporan = new LapTbc03($db, $config);
 
         // Create producer instance
         $this->producer = new Producer($this->config);
@@ -69,7 +72,7 @@ class Updater
      * 
      * @return StatusPasien[]
      */
-    private function fetchFromDatabase($start, $end): array {
+    private function fetchFromDatabase($start, $end, $limit = 0): array {
         if (empty($start) || $start == 'last') {
             $start = $this->getLastOutgoing();
         }
@@ -78,22 +81,40 @@ class Updater
             $end = date('Y-m-d H:i:s');
         }
 
+        if ($limit < 1) {
+            $limit = $this->config['producer']['batch_size'];
+        }
+        
         $status = [];
 
-        //TODO: Implementasi pengambilan data dari database berdasarkan rentang waktu $start dan $end
+        // Proses SO
+        $statusSo = $this->laporan->getData(LapTbc03::TYPE_SO, $start, $end, false, $limit);
+        foreach ($statusSo as $item) {
+            $item['diagnosis'] = 'TBC SO';
+            $statusPasien = new StatusPasien();
+            $status[] = $statusPasien->fromDbRecord($item);
+        }
 
-        $statusPasien = new StatusPasien();
-        $status[] = $statusPasien->fromArray([
-            'terduga_id' => '123',
-            'pasien_nik' => '3403011703850005',
-            'pasien_tb_id' => '123-ab',
-            'status_diagnosa' => 'TBCSO',
-            'diagnosa_lab_metode' => 'TCM',
-            'diagnosa_lab_hasil' => 'rif-sen',
-            'tanggal_mulai_pengobatan' => null,
-            'tanggal_selesai_pengobatan' => null,
-            'hasil_akhir' => null
-        ]);
+        // Proses RO
+        $statusRo = $this->laporan->getData(LapTbc03::TYPE_RO, $start, $end, false, $limit);
+        foreach ($statusRo as $item) {
+            $item['diagnosis'] = 'TBC RO';
+            $statusPasien = new StatusPasien();
+            $status[] = $statusPasien->fromDbRecord($item);
+        }
+
+        // $statusPasien = new StatusPasien();
+        // $status[] = $statusPasien->fromArray([
+        //     'terduga_id' => '123',
+        //     'pasien_nik' => '3403011703850005',
+        //     'pasien_tb_id' => '123-ab',
+        //     'status_diagnosa' => 'TBCSO',
+        //     'diagnosa_lab_metode' => 'TCM',
+        //     'diagnosa_lab_hasil' => 'rif-sen',
+        //     'tanggal_mulai_pengobatan' => null,
+        //     'tanggal_selesai_pengobatan' => null,
+        //     'hasil_akhir' => null
+        // ]);
 
         return $status;
     }

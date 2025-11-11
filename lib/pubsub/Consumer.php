@@ -55,17 +55,11 @@ class Consumer extends Client
             try {
                 $subscription = $this->pubSubClient->subscription($this->subscriptionName);
                 $options = [
-                    'maxMessages' => $maxMessages,
-                    'returnImmediately' => false
+                    // 'maxMessages' => $maxMessages,
+                    // 'returnImmediately' => false
                 ];
 
-                $result = $subscription->pull($options);
-                $messages = [];
-
-                foreach ($result as $pullMessage) {
-                    $messages[] = $pullMessage;
-                }
-
+                $messages = $subscription->pull($options);
                 $count = count($messages);
                 if ($count === 0) {
                     $this->logger->debug("No messages pulled from subscription {$this->subscriptionName}");
@@ -163,6 +157,7 @@ class Consumer extends Client
         $rawMessages = [];
         foreach ($messages as $message) {
             $rawMessages[$message->id()] = $message;
+            $subscription->acknowledge($message);
         }
 
         // Inspeksi message sebelum diproses
@@ -184,7 +179,6 @@ class Consumer extends Client
 
                 if ($result === true) {
                     // Acknowledge the message if callback returns true
-                    $subscription->acknowledge($message);
                     $processedCount++;
                     $this->logger->debug("Message processed and acknowledged. Data: {$messageData}");
                 } else {

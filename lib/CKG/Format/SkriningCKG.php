@@ -229,7 +229,7 @@ class SkriningCKG extends TbObject
             'gejala_2_3_id' => $this->convertYaTidak($this->gejala_bb_turun),
             'gejala_2_4_id' => $this->convertYaTidak($this->gejala_demam_hilang_timbul),
             'gejala_2_5_id' => $this->convertYaTidak($this->gejala_berkeringat_malam),
-            'gejala_2_6_id' => $this->convertYaTidak($this->gejala_pembesaran_getah_bening),
+            'gejala_6_id' => $this->convertYaTidak($this->gejala_pembesaran_getah_bening),
             'hasil_skrining_id' => $this->convertYaTidak($this->hasil_skrining_tbc),
             'cxr_simpulan_id' => $this->convertRadiologyResult($this->hasil_skrining_tbc),
             'terduga_tb_id' => $this->convertYaTidak($this->terduga_tb),

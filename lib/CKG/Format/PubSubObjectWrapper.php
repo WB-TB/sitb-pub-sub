@@ -26,10 +26,14 @@ class PubSubObjectWrapper {
         return new self(self::PRODUCE, $class, $data);
     }
 
+    public function getData(): array {
+        return $this->data;
+    }
+
     public function fromArray(array $data)
     {
         $config = \Boot::getConfig();
-        if (isset($data[$config['ckg']['marker_field']]))
+        if (!isset($data[$config['ckg']['marker_field']]))
             return;
 
         $markerValueObj = $data[$config['ckg']['marker_field']];
@@ -48,9 +52,10 @@ class PubSubObjectWrapper {
                     /** @var TbObject */
                     $x = new $class();
                     $x->fromArray($item);
-                    array_push($this->data, $item);
+                    array_push($this->data, $x);
                 }
             }
+            \Boot::getLogger()->debug("DATA: " . print_r($data['data'], true));
         }
     }
 

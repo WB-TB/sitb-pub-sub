@@ -2,6 +2,8 @@
 
 namespace CKG\Format;
 
+use CKG\Format\TbObject;
+
 class SkriningCKG extends TbObject
 {
     private const DEFAULT_USER = '9999999999';

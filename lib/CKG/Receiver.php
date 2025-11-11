@@ -28,6 +28,7 @@ class Receiver
     public function prepare(array $rawMessages): array {;
         $validIds = $this->getExistingMessageIds(array_keys($rawMessages));
         // $updates = $this->getExistingData($rawMessages, $validIds);
+        $this->logger->debug("Prepare Messages: " . print_r($rawMessages, true));
         $valid = [];
         foreach ($rawMessages as $messageId => $message) {
             if (in_array($messageId, $validIds)) {
@@ -37,8 +38,10 @@ class Receiver
 
             try {
                 $data = $message->data();
+                // $this->logger->debug("Raw Data: " . print_r($data, true));
                 $skrining = PubSubObjectWrapper::NewConsume(SkriningCKG::class);
                 $skrining->fromJson($data);
+                $this->logger->debug("Parsing Skrining: " . json_encode($skrining, JSON_PRETTY_PRINT));
                 
                 // Hanya proses objek CKG yang valid
                 if ($skrining->isCkgObject()) {
@@ -71,7 +74,10 @@ class Receiver
                 echo "  Data: {$data}\n";
                 echo "  Attributes: " . json_encode($attributes) . "\n";
 
-                $this->saveToDatabase($skrining);
+                $items = $skrining->getData();
+                foreach ($items as $item) {
+                    $this->saveToDatabase($item);
+                }
 
                 // Return true to acknowledge, false to leave for retry
                 return true;
@@ -167,7 +173,7 @@ class Receiver
             $keyPlaceholders = implode(', ', array_keys($data));
             $valuePlaceholders = implode(', ', array_fill(0, count($data), '?'));
             $query = "INSERT INTO {$skriningTable} (id, ckg_id, {$keyPlaceholders}, created_at) VALUES (?, {$valuePlaceholders}, NOW())";
-            $params = array_merge($skrining->pasien_ckg_id, array_values($data));
+            $params = array_merge([$skrining->pasien_ckg_id], array_values($data));
 
             $stmt = $this->db->prepare($query);
             $stmt->execute($params);

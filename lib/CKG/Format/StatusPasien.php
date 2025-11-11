@@ -2,6 +2,8 @@
 
 namespace CKG\Format;
 
+use CKG\Format\TbObject;
+
 class StatusPasien extends TbObject
 {
     public $terduga_id;

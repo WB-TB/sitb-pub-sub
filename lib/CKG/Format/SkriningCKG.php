@@ -180,7 +180,7 @@ class SkriningCKG extends TbObject
         $return = [
             'tgl_skrining' => $this->periksa_tgl,
             'kegiatan_id' => '99',
-            'metode_id' => '88',
+            'metode_id' => '99',
             'tempat_skrining_id' => '3',
             'jenis_unit_pelaksana_id' => '4',
             'unit_pelaksana_id' => $this->periksa_faskes_sitb ?: '',
@@ -208,28 +208,29 @@ class SkriningCKG extends TbObject
             'tinggi_badan' => $this->hasil_tinggi_badan,
             'imt' => $this->hasil_imt,
             'status_gizi_id' => $this->convertYaTidak($this->risiko_kekurangan_gizi),
-            'riwayat_kontak_tb_id' => $this->convertYaTidak($this->kontak_pasien_tbc),
+            'riwayat_kontak_tb_id' => $this->convertYaTidak($this->kontak_pasien_tbc, 'Tidak'),
             // 'jenis_kontak_id' => null,
             // 'nama_kasus_indeks' => null,
             // 'nik_kasus_indeks' => null,
             // 'jenis_kasus_indeks_id' => null,
-            'risiko_1_id' => $this->convertYaTidak($this->risiko_pernah_terdiagnosis),
-            'risiko_3_id' => $this->convertYaTidak($this->risiko_kekurangan_gizi),
-            'risiko_4_id' => $this->convertYaTidak($this->risiko_merokok),
-            'risiko_5_id' => $this->convertYaTidak($this->risiko_perokok_pasif),
-            'risiko_6_id' => $this->convertYaTidak($this->risiko_lansia),
-            'risiko_7_id' => $this->convertYaTidak($this->risiko_ibu_hamil),
-            'risiko_8_id' => $this->convertYaTidak($this->risiko_dm),
-            'risiko_9_id' => $this->convertYaTidak($this->risiko_hipertensi),
-            'risiko_10_id' => $this->convertYaTidak($this->risiko_hiv_aids),
+            'risiko_1_id' => $this->convertYaTidak($this->risiko_pernah_terdiagnosis, 'Tidak'),
+            'risiko_3_id' => $this->convertYaTidak($this->risiko_kekurangan_gizi, 'Tidak'),
+            'risiko_4_id' => $this->convertYaTidak($this->risiko_merokok, 'Tidak'),
+            'risiko_5_id' => $this->convertYaTidak($this->risiko_perokok_pasif, 'Tidak'),
+            'risiko_6_id' => $this->convertYaTidak($this->risiko_lansia, 'Tidak'),
+            'risiko_7_id' => $this->convertYaTidak($this->risiko_ibu_hamil, 'Tidak'),
+            'risiko_8_id' => $this->convertYaTidak($this->risiko_dm, 'Tidak'),
+            'risiko_9_id' => $this->convertYaTidak($this->risiko_hipertensi, 'Tidak'),
+            'risiko_10_id' => $this->convertYaTidak($this->risiko_hiv_aids, 'Tidak'),
+            'risiko_11_id' => $this->convertYaTidak(null, 'Tidak'),
             // 'gejala_1_1_id' => $this->pasien_usia < 15 ? $this->convertYaTidak($this->gejala_batuk) : null,
             // 'gejala_1_1_durasi' => $this->pasien_usia < 15 ? ($this->gejala_batuk === 'Ya' ? 1 : null) : null,
             // 'gejala_2_1_id' => $this->pasien_usia >= 15 ? $this->convertYaTidak($this->gejala_batuk) : null,
             // 'gejala_2_1_durasi' => $this->pasien_usia >= 15 ? ($this->gejala_batuk === 'Ya' ? 1 : null) : null,
-            'gejala_2_3_id' => $this->convertYaTidak($this->gejala_bb_turun),
-            'gejala_2_4_id' => $this->convertYaTidak($this->gejala_demam_hilang_timbul),
-            'gejala_2_5_id' => $this->convertYaTidak($this->gejala_berkeringat_malam),
-            'gejala_6_id' => $this->convertYaTidak($this->gejala_pembesaran_getah_bening),
+            // 'gejala_2_3_id' => $this->convertYaTidak($this->gejala_bb_turun),
+            // 'gejala_2_4_id' => $this->convertYaTidak($this->gejala_demam_hilang_timbul),
+            // 'gejala_2_5_id' => $this->convertYaTidak($this->gejala_berkeringat_malam),
+            'gejala_6_id' => $this->convertYaTidak($this->gejala_pembesaran_getah_bening, 'Tidak'),
             'hasil_skrining_id' => $this->convertYaTidak($this->hasil_skrining_tbc),
             'cxr_simpulan_id' => $this->convertRadiologyResult($this->hasil_skrining_tbc),
             'terduga_tb_id' => $this->convertYaTidak($this->terduga_tb),
@@ -243,14 +244,21 @@ class SkriningCKG extends TbObject
         ];
 
         if ($ageYear < 15) {
-            $return['gejala_1_1_id'] = $this->convertYaTidak($this->gejala_batuk);
+            $return['gejala_1_1_id'] = $this->convertYaTidak($this->gejala_batuk, 'Tidak');
             if ($this->gejala_batuk = 'Ya')
                 $return['gejala_1_1_durasi'] = 15;
 
+            $return['gejala_1_3_id'] = $this->convertYaTidak($this->gejala_bb_turun, 'Tidak');
+            $return['gejala_1_4_id'] = $this->convertYaTidak($this->gejala_demam_hilang_timbul, 'Tidak');
+            $return['gejala_1_5_id'] = $this->convertYaTidak($this->gejala_berkeringat_malam, 'Tidak');
         }else {
-            $return['gejala_2_1_id'] = $this->convertYaTidak($this->gejala_batuk);
+            $return['gejala_2_1_id'] = $this->convertYaTidak($this->gejala_batuk, 'Tidak');
             if ($this->gejala_batuk = 'Ya')
                 $return['gejala_2_1_durasi'] = 15;
+
+            $return['gejala_2_3_id'] = $this->convertYaTidak($this->gejala_bb_turun, 'Tidak');
+            $return['gejala_2_4_id'] = $this->convertYaTidak($this->gejala_demam_hilang_timbul, 'Tidak');
+            $return['gejala_2_5_id'] = $this->convertYaTidak($this->gejala_berkeringat_malam, 'Tidak');
         }
 
         return $return;

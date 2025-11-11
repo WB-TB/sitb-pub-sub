@@ -29,7 +29,7 @@ abstract class DbObject {
      * @param string|null $value
      * @return int|null
      */
-    protected function convertYaTidak(?string $value): ?string
+    protected function convertYaTidak(?string $value, ?string $default = null): ?string
     {
         if ($value === 'Ya') {
             return '1';
@@ -39,10 +39,10 @@ abstract class DbObject {
             return '2';
         }
         
-        return null;
+        return $default;
     }
 
-    protected function convertTindakLanjut(?string $value): ?string {
+    protected function convertTindakLanjut(?string $value, ?string $default = null): ?string {
         if ($value === 'Belum Ada') {
             return '0';
         } elseif ($value === 'Dirujuk Untuk Pemeriksaan TB') {
@@ -51,7 +51,7 @@ abstract class DbObject {
             return '2';
         }
         
-        return null;
+        return $default;
     }
     
     /**

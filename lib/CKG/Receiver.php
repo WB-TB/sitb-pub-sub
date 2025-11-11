@@ -165,8 +165,8 @@ class Receiver
         if ($skriningId) {
             $processedTable = $this->processedTable;
             if ($update) {
-                $placeholders = implode(', ', array_map(fn($key) => "{$key} = ?", array_keys($data)));
                 $query = "UPDATE {$processedTable} SET processed_at = NOW() WHERE id = ?";
+                $stmt2 = $this->db->prepare($query);
                 $stmt2->execute([$skrining->pasien_ckg_id]);
             } else {
                 $query2 = "INSERT INTO {$processedTable} (id, ckg_id, processed_at) VALUES (?, ?, NOW())";

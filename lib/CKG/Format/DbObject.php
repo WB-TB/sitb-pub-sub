@@ -14,9 +14,9 @@ abstract class DbObject {
      */
     protected function convertGender(?string $gender): ?string
     {
-        if ($gender === 'Laki-laki') {
+        if ($gender === 'Laki-laki' || $gender === 'L') {
             return '1'; // Male
-        } elseif ($gender === 'Perempuan') {
+        } elseif ($gender === 'Perempuan' || $gender === 'P') {
             return '2'; // Female
         }
         

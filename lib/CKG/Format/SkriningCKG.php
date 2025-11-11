@@ -6,7 +6,7 @@ use CKG\Format\TbObject;
 
 class SkriningCKG extends TbObject
 {
-    private const DEFAULT_USER = '9999999999';
+    private const DEFAULT_USER = '99999999';
 
     public $pasien_ckg_id;
     public $pasien_nik;

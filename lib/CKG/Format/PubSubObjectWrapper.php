@@ -102,7 +102,7 @@ class PubSubObjectWrapper {
     {
         $array = $this->toArray();
         $config = \Boot::getConfig();
-        $array[$config['ckg']['marker_field']] = $config['ckg']['marker_value'];
+        // $array[$config['ckg']['marker_field']] = $config['ckg']['marker_value'];
 
         return json_encode($array);
     }

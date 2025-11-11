@@ -31,6 +31,9 @@ abstract class DbObject {
      */
     protected function convertYaTidak(?string $value, ?string $default = null): ?string
     {
+        if (!isset($value))
+            $value = $default;
+
         if ($value === 'Ya') {
             return '1';
         } elseif ($value === 'Tidak') {
@@ -43,6 +46,9 @@ abstract class DbObject {
     }
 
     protected function convertTindakLanjut(?string $value, ?string $default = null): ?string {
+        if (!isset($value))
+            $value = $default;
+        
         if ($value === 'Belum Ada') {
             return '0';
         } elseif ($value === 'Dirujuk Untuk Pemeriksaan TB') {

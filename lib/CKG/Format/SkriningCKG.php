@@ -34,6 +34,7 @@ class SkriningCKG extends TbObject
     public $hasil_gds;
     public $hasil_gdp;
     public $hasil_gdpp;
+    public $risiko_pernah_terdiagnosis;
     public $risiko_kekurangan_gizi;
     public $risiko_merokok;
     public $risiko_perokok_pasif;
@@ -51,6 +52,7 @@ class SkriningCKG extends TbObject
     public $kontak_pasien_tbc;
     public $hasil_skrining_tbc;
     public $terduga_tb;
+    public $tindak_lanjut_tb;
     public $pemeriksaan_tb_metode;
     public $pemeriksaan_tb_bta;
     public $pemeriksaan_tb_tcm;
@@ -83,6 +85,7 @@ class SkriningCKG extends TbObject
         $this->hasil_gds = $data['hasil_gds'] ?? null;
         $this->hasil_gdp = $data['hasil_gdp'] ?? null;
         $this->hasil_gdpp = $data['hasil_gdpp'] ?? null;
+        $this->risiko_pernah_terdiagnosis = $data['risiko_pernah_terdiagnosis'] ?? null;
         $this->risiko_kekurangan_gizi = $data['risiko_kekurangan_gizi'] ?? null;
         $this->risiko_merokok = $data['risiko_merokok'] ?? null;
         $this->risiko_perokok_pasif = $data['risiko_perokok_pasif'] ?? null;
@@ -100,6 +103,7 @@ class SkriningCKG extends TbObject
         $this->kontak_pasien_tbc = $data['kontak_pasien_tbc'] ?? null;
         $this->hasil_skrining_tbc = $data['hasil_skrining_tbc'] ?? null;
         $this->terduga_tb = $data['terduga_tb'] ?? null;
+        $this->tindak_lanjut_tb = $data['tindak_lanjut_tb'] ?? null;
         $this->pemeriksaan_tb_metode = $data['pemeriksaan_tb_metode'] ?? null;
         $this->pemeriksaan_tb_bta = $data['pemeriksaan_tb_bta'] ?? null;
         $this->pemeriksaan_tb_tcm = $data['pemeriksaan_tb_tcm'] ?? null;
@@ -134,6 +138,7 @@ class SkriningCKG extends TbObject
             'hasil_gds' => $this->hasil_gds,
             'hasil_gdp' => $this->hasil_gdp,
             'hasil_gdpp' => $this->hasil_gdpp,
+            'risiko_pernah_terdiagnosis' => $this->risiko_pernah_terdiagnosis,
             'risiko_kekurangan_gizi' => $this->risiko_kekurangan_gizi,
             'risiko_merokok' => $this->risiko_merokok,
             'risiko_perokok_pasif' => $this->risiko_perokok_pasif,
@@ -151,6 +156,7 @@ class SkriningCKG extends TbObject
             'kontak_pasien_tbc' => $this->kontak_pasien_tbc,
             'hasil_skrining_tbc' => $this->hasil_skrining_tbc,
             'terduga_tb' => $this->terduga_tb,
+            'tindak_lanjut_tb' => $this->tindak_lanjut_tb,
             'pemeriksaan_tb_metode' => $this->pemeriksaan_tb_metode,
             'pemeriksaan_tb_bta' => $this->pemeriksaan_tb_bta,
             'pemeriksaan_tb_tcm' => $this->pemeriksaan_tb_tcm,
@@ -166,6 +172,10 @@ class SkriningCKG extends TbObject
         list($ageYear, $ageMonth) = $this->calculateAge();
         if (empty($ageYear))
             $ageYear = $this->pasien_usia;
+
+        if ($this->terduga_tb == 'Ya') {
+            $this->tindak_lanjut_tb = 'Dirujuk Untuk Pemeriksaan TB';
+        }
 
         $return = [
             'tgl_skrining' => $this->periksa_tgl,
@@ -203,6 +213,7 @@ class SkriningCKG extends TbObject
             // 'nama_kasus_indeks' => null,
             // 'nik_kasus_indeks' => null,
             // 'jenis_kasus_indeks_id' => null,
+            'risiko_1_id' => $this->convertYaTidak($this->risiko_pernah_terdiagnosis),
             'risiko_3_id' => $this->convertYaTidak($this->risiko_kekurangan_gizi),
             'risiko_4_id' => $this->convertYaTidak($this->risiko_merokok),
             'risiko_5_id' => $this->convertYaTidak($this->risiko_perokok_pasif),
@@ -218,9 +229,11 @@ class SkriningCKG extends TbObject
             'gejala_2_3_id' => $this->convertYaTidak($this->gejala_bb_turun),
             'gejala_2_4_id' => $this->convertYaTidak($this->gejala_demam_hilang_timbul),
             'gejala_2_5_id' => $this->convertYaTidak($this->gejala_berkeringat_malam),
+            'gejala_2_6_id' => $this->convertYaTidak($this->gejala_pembesaran_getah_bening),
             'hasil_skrining_id' => $this->convertYaTidak($this->hasil_skrining_tbc),
             'cxr_simpulan_id' => $this->convertRadiologyResult($this->hasil_skrining_tbc),
             'terduga_tb_id' => $this->convertYaTidak($this->terduga_tb),
+            'tindak_lanjut_id' => $this->convertTindakLanjut($this->tindak_lanjut_tb),
             'insert_by' => self::DEFAULT_USER,
             'insert_at' => $now,
             'update_by' => self::DEFAULT_USER,

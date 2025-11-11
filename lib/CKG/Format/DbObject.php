@@ -41,6 +41,18 @@ abstract class DbObject {
         
         return null;
     }
+
+    protected function convertTindakLanjut(?string $value): ?string {
+        if ($value === 'Belum Ada') {
+            return '0';
+        } elseif ($value === 'Dirujuk Untuk Pemeriksaan TB') {
+            return '1';
+        } elseif ($value === 'Sudah Terdaftar Sebagai Terduga TB') {
+            return '2';
+        }
+        
+        return null;
+    }
     
     /**
      * Convert radiology result to ID format

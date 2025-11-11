@@ -235,6 +235,7 @@ class SkriningCKG extends TbObject
             'cxr_simpulan_id' => $this->convertRadiologyResult($this->hasil_skrining_tbc),
             'terduga_tb_id' => $this->convertYaTidak($this->terduga_tb),
             'tindak_lanjut_id' => $this->convertTindakLanjut($this->tindak_lanjut_tb),
+            'dirujuk_ke_id' => $this->periksa_faskes_sitb ?: '',
             'insert_by' => self::DEFAULT_USER,
             'insert_at' => $now,
             'update_by' => self::DEFAULT_USER,

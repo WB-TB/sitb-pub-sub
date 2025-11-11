@@ -3,6 +3,7 @@
 namespace CKG;
 
 use Database\MySQL;
+use Database\TaSkrining;
 use CKG\Format\PubSubObjectWrapper;
 use CKG\Format\SkriningCKG;
 use Monolog\Logger;
@@ -14,7 +15,8 @@ class Receiver
     private Logger $logger;
     private $incomingTable;
     private $processedTable;
-    private $skriningTable;
+    // private $skriningTable;
+    private $skriningModel;
     
     public function __construct(MySQL $db, array $config) {
         $this->db = $db;
@@ -22,7 +24,8 @@ class Receiver
         $this->logger = \Boot::getLogger();
         $this->incomingTable = $this->config['ckg']['table_incoming'] ?? 'ckg_pubsub_incoming';
         $this->processedTable = $this->config['ckg']['table_processed'] ?? 'ckg_pubsub_processed';
-        $this->skriningTable = $this->config['ckg']['table_skrining'] ?? 'skrining_tb';
+        // $this->skriningTable = $this->config['ckg']['table_skrining'] ?? 'skrining_tb';
+        $this->skriningModel = new TaSkrining($db, $config);
     }
 
     public function prepare(array $rawMessages): array {;
@@ -154,13 +157,26 @@ class Receiver
         ]);
     }
 
-    private function saveToDatabase(SkriningCKG $skrining, $skriningId = null) {
-        $this->logger->info("Saving SkriningCKG to database: {$skrining}");
+    private function saveToDatabase(SkriningCKG $skrining) {
         $data = $skrining->toDbRecord();
-        $skriningTable = $this->skriningTable;
+        // $skriningTable = $this->skriningTable;
 
-        // Jika skriningId tidak null, berarti ini update
+
+        list($skriningId, $update) = $this->skriningModel->save($skrining);
         if ($skriningId) {
+            $processedTable = $this->processedTable;
+            if ($update) {
+                $placeholders = implode(', ', array_map(fn($key) => "{$key} = ?", array_keys($data)));
+                $query = "UPDATE {$processedTable} SET processed_at = NOW() WHERE id = ?";
+                $stmt2->execute([$skrining->pasien_ckg_id]);
+            } else {
+                $query2 = "INSERT INTO {$processedTable} (id, ckg_id, processed_at) VALUES (?, ?, NOW())";
+                $stmt2 = $this->db->prepare($query2);
+                $stmt2->execute([$skrining->pasien_ckg_id, $skrining->pasien_ckg_id]);
+            }
+        }
+        // Jika skriningId tidak null, berarti ini update
+        /*if ($skriningId) {
             $placeholders = implode(', ', array_map(fn($key) => "{$key} = ?", array_keys($data)));
             $query = "UPDATE {$skriningTable} SET {$placeholders}, updated_at = NOW() WHERE id = ?";
             $params = array_merge(array_values($data), $skriningId);
@@ -186,6 +202,6 @@ class Receiver
             $stmt2->execute([$skrining->pasien_ckg_id, $skrining->pasien_ckg_id]);
 
             $this->logger->debug("New Skrining saved with ID: {$skriningId}");
-        }
+        }*/
     }
 }

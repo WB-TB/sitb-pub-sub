@@ -54,7 +54,9 @@ class TaSkrining
 
                 // Update existing record
                 $result = $this->update($existingId, $data);
-                $this->logger->info("Updated ta_skrining record with ID: {$existingId}");
+                $this->logger->info("Update Skrining with ID: {$existingId}");
+
+                $update = false;
             } else {
                 // bersihkan dulu
                 unset($data['id']);
@@ -63,14 +65,17 @@ class TaSkrining
 
                 // Insert new record
                 $result = $this->insert($data);
-                $this->logger->info("Inserted new ta_skrining record with ID: {$result}");
+                $this->logger->info("New Skrining saved with ID: {$result}");
+
+                $update = true;
             }
             
-            return $result;
+            return [$result, $update];
         } catch (\Exception $e) {
-            $this->logger->error("Error saving ta_skrining data: " . $e->getMessage());
-            return false;
+            $this->logger->error("Error saving Skrining data: " . $e->getMessage());
         }
+
+        return [false, false];
     }
     
     /**

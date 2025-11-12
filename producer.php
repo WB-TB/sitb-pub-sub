@@ -8,7 +8,7 @@ $cliParams = Boot::getCliParams();
 
 $updater = new \Ckg\Updater(Boot::getDatabase(), Boot::getConfig());
 if (isset($cliParams['mode']) && $cliParams['mode'] === 'pubsub') {
-    $start = $cliParams['end'] ?? 'now';
+    $end = $cliParams['end'] ?? 'now';
     $updater->runPubSub('last', $end);
 }else {
     $start = $cliParams['start'] ?? date('Y-m-d H:i:s', strtotime('-1 day'));

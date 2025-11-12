@@ -44,17 +44,24 @@ class Updater
             $messages = $this->buildMessages($data);
 
             // Publikasikan pesan menggunakan producer
-            $this->producer->publishBatch($messages, [
-                'source' => 'sitb-ckg',
-                'priority' => 'high',
-                'timestamp' => (string) time(),
-                'environment' => $this->config['environment']
-            ]);
+            if (count($messages) > 0) {
+                $this->producer->publishBatch($messages, [
+                    'source' => 'sitb-ckg',
+                    'priority' => 'high',
+                    'timestamp' => (string) time(),
+                    'environment' => $this->config['environment']
+                ]);
+            }
         } catch (\Exception $e) {
             $this->logger->error("Error in PubSub producer: " . $e->getMessage());
         }
     }
 
+    /**
+     * 
+     * @param string $start
+     * @param string $end
+     */
     public function runApiClient($start, $end) {
         try {
             $this->logger->info("Update data dari API Client mulai {$start} sampai {$end}");
@@ -75,6 +82,8 @@ class Updater
     private function fetchFromDatabase($start, $end, $limit = 0): array {
         if (empty($start) || $start == 'last') {
             $start = $this->getLastOutgoing();
+            if (empty($start))
+                $start = date('Y-m-d H:i:s', strtotime('-1 day'));
         }
 
         if (empty($end) || $end == 'now') {
@@ -89,10 +98,12 @@ class Updater
 
         // Proses SO
         $statusSo = $this->laporan->getData(LapTbc03::TYPE_SO, $start, $end, false, $limit);
+        print_r($statusSo);
         foreach ($statusSo as $item) {
             $item['diagnosis'] = 'TBC SO';
             $statusPasien = new StatusPasien();
-            $status[] = $statusPasien->fromDbRecord($item);
+            $statusPasien->fromDbRecord($item);
+            $status[] = $statusPasien;
         }
 
         // Proses RO
@@ -100,7 +111,8 @@ class Updater
         foreach ($statusRo as $item) {
             $item['diagnosis'] = 'TBC RO';
             $statusPasien = new StatusPasien();
-            $status[] = $statusPasien->fromDbRecord($item);
+            $statusPasien->fromDbRecord($item);
+            $status[] = $statusPasien;
         }
 
         // $statusPasien = new StatusPasien();
@@ -141,8 +153,10 @@ class Updater
     private function buildMessages(array $data) {
         // Implementasi pembuatan message dari data untuk dikirim via PubSub Producer
         $messages = [];
-        $status = PubSubObjectWrapper::NewProduce(StatusPasien::class, $data);
-        $messages[] = $status->toJson();
+        if (count($data) > 0) {
+            $status = PubSubObjectWrapper::NewProduce(StatusPasien::class, $data);
+            $messages[] = $status->toJson();
+        }
 
         return $messages;
     }
@@ -152,17 +166,19 @@ class Updater
      * @param StatusPasien[] $statusPasien
      */
     private function sendViaApiClient(array $statusPasien) {
-        try {
-            $apiConfig = $this->config['api'] ?? [];
-            $apiClient = new ApiClient($apiConfig);
-            $batchSize = $apiConfig['batch_size'] && $apiConfig['batch_size'] > 1 ? $apiConfig['batch_size'] : 100;
-            $endpoint = '/v1/ckg/tb/status-pasien';
-            $batchSize = min(count($statusPasien), $batchSize, 500); // Batasi maksimal batch size ke 500
-            
-            // Process data in batches if batchSize is configured
-            $this->sendBatchedData($apiClient, $statusPasien, $batchSize, $endpoint);
-        } catch (\Exception $e) {
-            $this->logger->error("Error sending status pasien via API Client: " . $e->getMessage());
+        if (count($statusPasien) > 0) {
+            try {
+                    $apiConfig = $this->config['api'] ?? [];
+                    $apiClient = new ApiClient($apiConfig);
+                    $batchSize = $apiConfig['batch_size'] && $apiConfig['batch_size'] > 1 ? $apiConfig['batch_size'] : 100;
+                    $endpoint = '/v1/ckg/tb/status-pasien';
+                    $batchSize = min(count($statusPasien), $batchSize, 500); // Batasi maksimal batch size ke 500
+                    
+                    // Process data in batches if batchSize is configured
+                    $this->sendBatchedData($apiClient, $statusPasien, $batchSize, $endpoint);
+            } catch (\Exception $e) {
+                $this->logger->error("Error sending status pasien via API Client: " . $e->getMessage());
+            }
         }
     }
     

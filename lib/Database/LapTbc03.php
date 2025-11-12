@@ -35,9 +35,9 @@ class LapTbc03
      * @param int $type tipe table SO atau RO
      * @param string $start datetime mulai
      * @param string $end datetime sampai
-     * @return array|null|int
+     * @return array|int
      */
-    public function getData(int $type, string $start, string $end, bool $count = false, int $limit = 1000): array|null|int
+    public function getData(int $type, string $start, string $end, bool $count = false, int $limit = 1000): array|int
     {
         $tableName = $type == self::TYPE_RO ? $this->tableNameRo : $this->tableNameSo;
         if ($count) {
@@ -51,9 +51,9 @@ class LapTbc03
             $sql = "SELECT * FROM {$tableName} WHERE update_at > ? and update_at <= ? LIMIT ?";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$start, $end, $limit]);
-            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+            $result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             
-            return $result ?: null;
+            return $result ?: [];
         }
     }
 }

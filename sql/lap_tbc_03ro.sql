@@ -18,10 +18,10 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ----------------------------
--- Table structure for lap_tbc_03ro_ckg
+-- Table structure for lap_tbc_03ro
 -- ----------------------------
-DROP TABLE IF EXISTS `lap_tbc_03ro_ckg`;
-CREATE TABLE `lap_tbc_03ro_ckg`  (
+DROP TABLE IF EXISTS `lap_tbc_03ro`;
+CREATE TABLE `lap_tbc_03ro`  (
   `register_id` bigint UNSIGNED NOT NULL,
   `id_reg_terduga` bigint UNSIGNED NULL DEFAULT NULL,
   `tahun` int NULL DEFAULT NULL,

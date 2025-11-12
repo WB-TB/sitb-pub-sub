@@ -6,6 +6,7 @@ class PubSubObjectWrapper {
     public const CONSUME = 10;
     public const PRODUCE = 11;
 
+    protected $config;
     protected $ckgObject = false;
     protected $type;
     protected $class;
@@ -16,6 +17,7 @@ class PubSubObjectWrapper {
         $this->type = $type;
         $this->class = $class;
         $this->data = $data;
+        $this->config = \Boot::getConfig();
     }
 
     public static function NewConsume($class) {
@@ -32,21 +34,20 @@ class PubSubObjectWrapper {
 
     public function fromArray(array $data)
     {
-        $config = \Boot::getConfig();
-        if (!isset($data[$config['ckg']['marker_field']]))
+        if (!isset($data[$this->config['ckg']['marker_field']]))
             return;
 
-        $markerValueObj = $data[$config['ckg']['marker_field']];
+        $markerValueObj = $data[$this->config['ckg']['marker_field']];
 
         if ($this->type == self::PRODUCE)
-            $markerValueClass = $config['ckg']['marker_produce'];
+            $markerValueClass = $this->config['ckg']['marker_produce'];
         else
-            $markerValueClass = $config['ckg']['marker_consume'];
+            $markerValueClass = $this->config['ckg']['marker_consume'];
 
         if ($markerValueObj == $markerValueClass) {
             $this->ckgObject = true;
             $class = $this->class;
-            // unset($data[$config['ckg']['marker_field']]);
+            // unset($data[$this->config['ckg']['marker_field']]);
             if (isset($data['data']) && is_array($data['data'])) {
                 foreach ($data['data'] as $item) {
                     /** @var TbObject */
@@ -82,12 +83,11 @@ class PubSubObjectWrapper {
 
     public function toJson(): string {
         $data = $this->toArray();
-        $config = \Boot::getConfig();
 
         if ($this->type == self::PRODUCE)
-            $data[$config['ckg']['marker_field']] = $config['ckg']['marker_produce'];
+            $data[$this->config['ckg']['marker_field']] = $this->config['ckg']['marker_produce'];
         else
-            $data[$config['ckg']['marker_field']] = $config['ckg']['marker_consume'];
+            $data[$this->config['ckg']['marker_field']] = $this->config['ckg']['marker_consume'];
 
         $jsonStr = json_encode($data);
         return $jsonStr;
@@ -101,9 +101,20 @@ class PubSubObjectWrapper {
     public function __toString(): string
     {
         $array = $this->toArray();
-        $config = \Boot::getConfig();
-        // $array[$config['ckg']['marker_field']] = $config['ckg']['marker_value'];
+        $this->config = \Boot::getConfig();
+        // $array[$this->config['ckg']['marker_field']] = $this->config['ckg']['marker_value'];
 
         return json_encode($array);
+    }
+
+    private function getMarker(): array {
+        $markerField = $this->config['ckg']['marker_field'];
+
+        if ($this->type == self::PRODUCE)
+            $markerValueClass = $this->config['ckg']['marker_produce'];
+        else
+            $markerValueClass = $this->config['ckg']['marker_consume'];
+
+        return [$markerField, $markerValueClass];
     }
 }

@@ -7,9 +7,6 @@ class Consumer extends Client
     private $sleepTimeBetweenPulls;
     private $retryCount;
     private $retryDelay;
-    private $deadLetterEnabled;
-    private $maxDeliveryAttempts;
-    private $deadLetterTopicSuffix;
     private $flowControlEnabled;
     private $maxOutstandingMessages;
     private $maxOutstandingBytes;
@@ -23,11 +20,6 @@ class Consumer extends Client
         $this->sleepTimeBetweenPulls = $this->config['consumer']['sleep_time_between_pulls'];
         $this->retryCount = $this->config['consumer']['retry_count'];
         $this->retryDelay = $this->config['consumer']['retry_delay'];
-        
-        // Dead letter policy configuration
-        $this->deadLetterEnabled = $this->config['consumer']['dead_letter_policy']['enabled'];
-        $this->maxDeliveryAttempts = $this->config['consumer']['dead_letter_policy']['max_delivery_attempts'];
-        $this->deadLetterTopicSuffix = $this->config['consumer']['dead_letter_policy']['dead_letter_topic_suffix'];
         
         // Flow control configuration
         $this->flowControlEnabled = $this->config['consumer']['flow_control']['enabled'];
@@ -185,22 +177,11 @@ class Consumer extends Client
                 } else {
                     $failedMessages[] = $message;
                     $this->logger->warning("Message processing failed, not acknowledging. Data: {$messageData}");
-                    
-                    // Handle dead letter if enabled
-                    if ($this->deadLetterEnabled) {
-                        $this->handleDeadLetter($message);
-                    }
                 }
 
             } catch (\Exception $e) {
                 $failedMessages[] = $message;
                 $this->logger->error("Error processing message: " . $e->getMessage());
-                // Don't acknowledge failed messages so they can be retried
-                
-                // Handle dead letter if enabled
-                if ($this->deadLetterEnabled) {
-                    $this->handleDeadLetter($message);
-                }
             }
         }
 
@@ -235,41 +216,6 @@ class Consumer extends Client
         
         // Add other decompression algorithms as needed
         return $messageData;
-    }
-
-    /**
-     * Handle dead letter queue for failed messages
-     *
-     * @param mixed $message
-     * @return void
-     */
-    private function handleDeadLetter($message)
-    {
-        try {
-            $deadLetterTopicName = $this->topicName . $this->deadLetterTopicSuffix;
-            $deadLetterTopic = $this->pubSubClient->topic($deadLetterTopicName);
-            
-            // Create dead letter topic if it doesn't exist
-            if (!$deadLetterTopic->exists()) {
-                $deadLetterTopic->create();
-                $this->logger->info("Created dead letter topic: {$deadLetterTopicName}");
-            }
-            
-            // Publish to dead letter topic
-            $deadLetterTopic->publish([
-                'data' => $message->data(),
-                'attributes' => array_merge($message->attributes(), [
-                    'original_subscription' => $this->subscriptionName,
-                    'dead_letter_timestamp' => (string) time(),
-                    'attempts' => '1' // This would need to be tracked properly
-                ])
-            ]);
-            
-            $this->logger->info("Message sent to dead letter queue: {$deadLetterTopicName}");
-            
-        } catch (\Exception $e) {
-            $this->logger->error("Failed to send message to dead letter queue: " . $e->getMessage());
-        }
     }
 
     /**

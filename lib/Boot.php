@@ -32,13 +32,21 @@ class Boot {
         // load configuration
         self::$config = require APPDIR . '/config.php';
 
-        // initialize logger
         $class = basename(str_replace('\\', '/', $class));
         $lclass = strtolower($class);
-        self::$logger = new Logger('PubSub-' . $class);
-        self::$logger->pushHandler(new StreamHandler(self::$config['logging'][$lclass], self::$config['logging']['level']));
-     
-        self::getCliParams();
+        $cliParams = self::getCliParams();
+        if (isset($cliParams['mode']) && $cliParams['mode'] === 'api') {
+            $lclass = "$lclass-api";
+            $logname = 'Api-' . $class;
+        } else {
+            if ($lclass == 'producer')
+                $lclass = "$lclass-pubsub";
+            $logname = 'PubSub-' . $class;
+        }
+
+        // initialize logger
+        self::$logger = new Logger($logname);
+        self::$logger->pushHandler(new StreamHandler(self::$config['logging'][$lclass], self::$config['logging']['level']));     
 
         self::$initialized = true;
     }

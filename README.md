@@ -51,14 +51,11 @@ Edit file `/opt/sitb-ckg/config.php`:
 
 ```php
 return [
+    'environment' => getenv('APP_ENV') ?: 'development',
     'google_cloud' => [
         'project_id' => 'your-project-id',
         'credentials_path' => __DIR__ . '/credentials.json',
-        'auth_scopes' => [
-            'https://www.googleapis.com/auth/pubsub',
-            'https://www.googleapis.com/auth/cloud-platform'
-        ],
-        'debug' => false
+        'debug' => getenv('GOOGLE_SDK_PHP_LOGGING') === 'true' ? true : false,
     ],
     'pubsub' => [
         'default_topic' => 'test-topic',
@@ -95,9 +92,29 @@ return [
             'algorithm' => 'gzip'
         ]
     ],
+    'api' => [
+        'base_url' => 'https://api-dev.dto.kemkes.go.id/fhir-sirs',
+        'timeout' => 60, // seconds
+        'api_key' => getenv('SITB_API_KEY') ?: 'your_api_key_here',
+        'api_header' => 'X-API-Key:',
+        'batch_size' => 100
+    ],
     'logging' => [
-        'level' => 'INFO',
-        'file' => __DIR__ . '/pubsub.log'
+        'level' => 'DEBUG', // DEBUG, INFO, WARNING, ERROR
+        'consumer' => '/var/log/sitb-ckg/consumer.log',
+        'producer-pubsub' => '/var/log/sitb-ckg/producer-pubsub.log',
+        'producer-api' => '/var/log/sitb-ckg/producer-api.log',
+    ],
+    'ckg' => [
+        'table_skrining' => 'ta_skrining',
+        'table_laporan_so' => 'lap_tbc_03so',
+        'table_laporan_ro' => 'lap_tbc_03ro',
+        'table_incoming' => 'tmp_ckg_incoming',
+        'table_outgoing' => 'tmp_ckg_outgoing',
+        'table_processed' => 'tmp_ckg_processed',
+        'marker_field' => 'transactionSource',
+        'marker_produce' => 'STATUS-PASIEN-TB',
+		'marker_consume' => 'SKRINING-CKG-TB',
     ]
 ];
 ```

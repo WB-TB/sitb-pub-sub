@@ -1,0 +1,16 @@
+[Unit]
+Description=CKG Consumer Service
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=sitb-ckg
+Group=sitb-ckg
+WorkingDirectory=/opt/sitb-ckg
+ExecStart=/usr/bin/php -f /opt/sitb-ckg/consumer.php
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

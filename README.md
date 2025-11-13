@@ -1,39 +1,53 @@
-# sitb-pub-sub
-Integrasi data SITB dan ASIK CKG melalui Google Pub/Sub dan API
+# CKG Service untuk SITB Server
+Integrasi data ASIK CKG dari aplikasi SITB melalui Google Pub/Sub dan Restful API.
 
-## Overview
+## Ringkasan
 
-This is a PHP implementation for integrating SIBT data with Google Cloud Pub/Sub. The implementation includes:
+Ini adalah implementasi PHP untuk mengintegrasikan data SIBT dengan Google Cloud Pub/Sub. Implementasi ini mencakup:
 
-- **Producer**: Publish messages to Google Pub/Sub topics
-- **Consumer**: Subscribe and process messages from Google Pub/Sub subscriptions
-- **Client**: Base class with common functionality for both producer and consumer
+- **Producer**: Mengirim pesan ke topik Google Pub/Sub (mode Pub/Sub dan mode API)
+- **Consumer**: Berlangganan dan memproses pesan dari langganan Google Pub/Sub
+- **Client**: Kelas dasar dengan fungsionalitas umum untuk producer dan consumer
 
-## Features
+## Fitur
 
-- **Message Compression**: Optional gzip compression for large messages
-- **Dead Letter Queue**: Automatic handling of failed messages
-- **Flow Control**: Configurable limits on outstanding messages
-- **Message Ordering**: Support for ordered message delivery
-- **Batch Processing**: Efficient batch publishing and processing
-- **Retry Logic**: Configurable retry mechanisms with exponential backoff
-- **Comprehensive Logging**: Detailed logging for debugging and monitoring
+- **Pemrosesan Batch**: Penerbitan dan pemrosesan batch yang efisien
+- **Retry Logic**: Mekanisme retry yang dapat dikonfigurasi dengan exponential backoff
+- **Logging Komprehensif**: Logging detail untuk debugging dan monitoring
+- **Layanan Systemd**: Manajemen layanan otomatis dengan timer
 
-## Installation
+## Instalasi
 
-1. Install dependencies:
+### Instalasi Cepat
+
+Gunakan skrip instalasi satu baris:
+
+```bash
+curl -sS https://raw.githubusercontent.com/WB-TB/sitb-pub-sub/main/scripts/install.sh | sudo bash
+```
+
+Skrip ini akan:
+- Mengunduh dan mengekstrak repositori ke `/opt/sitb-ckg`
+- Menginstal dependensi Composer
+- Membuat pengguna dan grup `sitb-ckg`
+- Menyiapkan layanan systemd untuk consumer, producer-pubsub, dan producer-api
+- Mengonfigurasi izin file dan kepemilikan yang tepat
+
+### Instalasi Manual
+
+1. Instal dependensi:
 ```bash
 composer install
 ```
 
-2. Set up Google Cloud credentials:
-   - Create a service account in Google Cloud Console
-   - Download the credentials JSON file
-   - Place it in the project directory as `credentials.json`
+2. Siapkan kredensial Google Cloud:
+   - Buat akun layanan di Google Cloud Console
+   - Unduh file JSON kredensial
+   - Letakkan di direktori proyek sebagai `credentials.json`
 
-## Configuration
+## Konfigurasi
 
-Edit `config.php` to match your Google Cloud project settings:
+Edit file `/opt/sitb-ckg/config.php`:
 
 ```php
 return [
@@ -62,13 +76,8 @@ return [
         'acknowledge_timeout' => 60,
         'retry_count' => 3,
         'retry_delay' => 1,
-        'dead_letter_policy' => [
-            'enabled' => true,
-            'max_delivery_attempts' => 5,
-            'dead_letter_topic_suffix' => '-dead-letter'
-        ],
         'flow_control' => [
-            'enabled' => true,
+            'enabled' => false,
             'max_outstanding_messages' => 1000,
             'max_outstanding_bytes' => 1000000 // 1MB
         ]
@@ -93,174 +102,159 @@ return [
 ];
 ```
 
-## Usage
+## Manajemen Layanan
 
-### Producer
+Setelah instalasi dan konfigurasi, Anda dapat mengelola layanan menggunakan systemd:
 
-```php
-<?php
-require __DIR__ . '/lib/Boot.php';
-
-$config = Boot::getConfig();
-$producer = new \PubSub\Producer($config);
-
-// Publish a single message
-$messageId = $producer->publish('Hello, World!', [
-    'source' => 'my-app',
-    'timestamp' => time()
-]);
-
-if ($messageId) {
-    echo "Message published with ID: {$messageId}\n";
-}
-
-// Publish multiple messages in batch
-$messages = [
-    'Message 1: Hello World',
-    'Message 2: How are you?',
-    'Message 3: Goodbye!'
-];
-
-$attributes = [
-    ['type' => 'greeting', 'priority' => 'high'],
-    ['type' => 'question', 'priority' => 'medium'],
-    ['type' => 'farewell', 'priority' => 'low']
-];
-
-$messageIds = $producer->publishBatch($messages, $attributes);
-
-echo "Published " . count($messageIds) . " messages\n";
-```
-
-### Consumer
-
-```php
-<?php
-require __DIR__ . '/lib/Boot.php';
-
-$config = Boot::getConfig();
-$consumer = new \PubSub\Consumer($config);
-
-// Process messages once
-$consumer->processMessages(
-    function($messages) {
-        // Inspector function - filter/validate messages
-        return $messages; // Return messages to process
-    },
-    function($skrining, $message, $skriningId) {
-        // Process each message
-        $data = $message->data();
-        echo "Processing message: {$data}\n";
-        
-        // Return true to acknowledge, false to retry
-        return true;
-    }
-);
-
-// Listen for messages continuously
-$consumer->listen(
-    function($messages) {
-        // Inspector function
-        return $messages;
-    },
-    function($skrining, $message, $skriningId) {
-        // Process each message
-        $data = $message->data();
-        echo "Received message: {$data}\n";
-        return true;
-    }
-);
-```
-
-## CLI Usage
-
-### Producer CLI
+### Layanan Consumer
 
 ```bash
-php producer.php --mode=pubsub
+# Mulai layanan
+sudo systemctl start ckg-consumer.service
+
+# Hentikan layanan
+sudo systemctl stop ckg-consumer.service
+
+# Mulai ulang layanan
+sudo systemctl restart ckg-consumer.service
+
+# Periksa status
+sudo systemctl status ckg-consumer.service
+
+# Lihat log
+sudo journalctl -u ckg-consumer.service -f
 ```
 
-### Consumer CLI
+### Layanan Producer Pub/Sub
+
+Layanan ini berjalan sebagai timer yang memicu producer dalam mode Pub/Sub pada interval yang dijadwalkan.
 
 ```bash
-php consumer.php
+# Periksa status timer
+sudo systemctl status ckg-producer-pubsub.timer
+
+# Mulai timer
+sudo systemctl start ckg-producer-pubsub.timer
+
+# Hentikan timer
+sudo systemctl stop ckg-producer-pubsub.timer
+
+# Lihat log
+sudo journalctl -u ckg-producer-pubsub.timer -f
 ```
 
-## Advanced Features
+### Layanan Producer API
 
-### Dead Letter Queue
+Layanan ini berjalan sebagai timer yang memicu producer dalam mode API pada interval yang dijadwalkan.
 
-When enabled, failed messages are automatically moved to a dead letter topic with the suffix `-dead-letter`. This allows for manual inspection and reprocessing of failed messages.
+```bash
+# Periksa status timer
+sudo systemctl status ckg-producer-api.timer
 
-### Flow Control
+# Mulai timer
+sudo systemctl start ckg-producer-api.timer
 
-The consumer implements flow control to prevent overwhelming the system with too many outstanding messages. When the limit is reached, the consumer will skip pulling new messages until capacity becomes available.
+# Hentikan timer
+sudo systemctl stop ckg-producer-api.timer
 
-### Message Compression
+# Lihat log
+sudo journalctl -u ckg-producer-api.timer -f
+```
 
-Large messages can be compressed using gzip to reduce bandwidth usage. The compression is automatically handled by the producer and decompressed by the consumer.
+## Penggunaan CLI
 
-### Message Ordering
+### CLI Producer
 
-For ordered message delivery, enable message ordering in the configuration and provide an ordering key in the message attributes.
+Mode Pub/Sub
+```bash
+php -f /opt/sitb-ckg/producer.php - --mode=pubsub
+```
 
-## Error Handling
+Mode API
+```bash
+php -f /opt/sitb-ckg/producer.php - --mode=api
+```
 
-The implementation includes comprehensive error handling with:
+### CLI Consumer
 
-- Retry logic with exponential backoff
-- Detailed logging of all operations
-- Graceful handling of Google Cloud API errors
-- Automatic dead letter queue for failed messages
+```bash
+php -f /opt/sitb-ckg/consumer.php
+```
+
+## Penanganan Kesalahan
+
+Implementasi ini mencakup penanganan kesalahan yang komprehensif dengan:
+
+- Logika retry dengan exponential backoff
+- Logging detail dari semua operasi
+- Penanganan error Google Cloud API yang graceful
 
 ## Monitoring
 
-All operations are logged to `pubsub.log` with configurable log levels. The logs include:
+Semua operasi dicatat ke systemd journal dengan tingkat log yang dapat dikonfigurasi. Log mencakup:
 
-- Message publish/acknowledge status
-- Processing statistics and success rates
-- Error details and retry attempts
-- Performance metrics
+- Status publish/acknowledge pesan
+- Statistik pemrosesan dan tingkat keberhasilan
+- Detail error dan percobaan retry
+- Metrik performa
 
-## Testing
+### Lokasi Log
 
-Run the test suite:
+- **Layanan Consumer**: `/var/log/sitb-ckg/consumer.log`
+- **Layanan Producer Pub/Sub**: `/var/log/sitb-ckg/producer-pubsub.log`
+- **Layanan Producer API**: `/var/log/sitb-ckg/producer-api.log`
+
+Lihat log menggunakan:
+```bash
+# Log consumer
+sudo journalctl -u ckg-consumer.service -f
+
+# Log producer Pub/Sub
+sudo journalctl -u ckg-producer-pubsub.timer -f
+
+# Log producer API
+sudo journalctl -u ckg-producer-api.timer -f
+```
+
+## Pengujian
+
+Jalankan rangkaian tes:
 
 ```bash
 composer test
 ```
 
-### Unit Tests
+### Tes Unit
 
-The project includes unit tests for all major components:
+Proyek ini mencakup tes unit untuk semua komponen utama:
 
-- **Producer Tests**: Test message publishing, batch processing, and compression
-- **Consumer Tests**: Test message consumption, acknowledgment, and dead letter handling
-- **Client Tests**: Test base functionality and Google Cloud integration
+- **Tes Producer**: Tes penerbitan pesan, pemrosesan batch, dan kompresi
+- **Tes Consumer**: Konsumsi pesan, acknowledgment, dan pengendalian alur
+- **Tes Client**: Fungsionalitas dasar dan integrasi Google Cloud
 
-To run specific test suites:
+Untuk menjalankan rangkaian tes tertentu:
 
 ```bash
-# Run producer tests
+# Jalankan tes producer
 ./vendor/bin/phpunit tests/ProducerTest.php
 
-# Run consumer tests
+# Jalankan tes consumer
 ./vendor/bin/phpunit tests/ConsumerTest.php
 
-# Run client tests
+# Jalankan tes client
 ./vendor/bin/phpunit tests/ClientTest.php
 ```
 
-### Mock Testing
+### Tes Mock
 
-For testing without actual Google Cloud services, the project includes mock implementations:
+Untuk pengujian tanpa layanan Google Cloud yang sebenarnya, proyek ini mencakup implementasi mock:
 
 ```php
-// Use mock client for testing
+// Gunakan client mock untuk pengujian
 $mockClient = new MockPubSubClient();
 $producer = new \PubSub\Producer($config, $mockClient);
 ```
 
-## License
+## Lisensi
 
-This project is licensed under the MIT License.
+Proyek ini dilisensikan di bawah Lisensi MIT.

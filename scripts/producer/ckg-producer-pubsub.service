@@ -1,0 +1,14 @@
+[Unit]
+Description=Daily CKG Producer Service
+After=network.target
+Wants=network.target
+
+[Service]
+Type=oneshot
+User=sitb-ckg
+Group=sitb-ckg
+WorkingDirectory=/opt/sitb-ckg
+ExecStart=/usr/bin/php -f /opt/sitb-ckg/producer.php - --mode=pubsub
+
+[Install]
+WantedBy=multi-user.target

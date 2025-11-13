@@ -1,0 +1,14 @@
+[Unit]
+Description=Run daily CKG Producer Service
+RefuseManualStart=false
+
+[Timer]
+# Menjadwalkan tugas berjalan setiap hari pada pukul 03:00 pagi (Waktu Lokal Server)
+# Format: Hari Minggu-Sabtu Tahun-Bulan-Hari Jam:Menit:Detik
+OnCalendar=*-*-* 03:00:00
+
+# Opsional: Jika tugas terlewat karena komputer mati, jalankan segera setelah hidup
+Persistent=true
+
+[Install]
+WantedBy=timers.target

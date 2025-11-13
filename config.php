@@ -9,10 +9,10 @@ return [
     ],
     'pubsub' => [
         'default_topic' => 'projects/ckg-tb-staging/topics/CKG-SITB',
-        'default_subscription' => 'projects/ckg-tb-staging/subscriptions/CKG-SITB-sub',
+        'default_subscription' => 'projects/ckg-tb-staging/subscriptions/CKG-SITB-sub2',
         'topics' => [
             'projects/ckg-tb-staging/topics/CKG-SITB' => [
-                'subscription' => 'projects/ckg-tb-staging/subscriptions/CKG-SITB-sub',
+                'subscription' => 'projects/ckg-tb-staging/subscriptions/CKG-SITB-sub2',
                 'message_ordering' => false
             ],
         ]
@@ -23,13 +23,8 @@ return [
         'acknowledge_timeout' => 60, // seconds
         'retry_count' => 3,
         'retry_delay' => 1, // seconds
-        'dead_letter_policy' => [
-            'enabled' => true,
-            'max_delivery_attempts' => 5,
-            'dead_letter_topic_suffix' => '-dead-letter'
-        ],
         'flow_control' => [
-            'enabled' => true,
+            'enabled' => false,
             'max_outstanding_messages' => 1000,
             'max_outstanding_bytes' => 1000000 // 1MB
         ]
@@ -61,18 +56,20 @@ return [
         'database_name' => 'xtb'
     ],
     'logging' => [
-        'level' => 'INFO', // DEBUG, INFO, WARNING, ERROR
+        'level' => 'DEBUG', // DEBUG, INFO, WARNING, ERROR
         'consumer' => '/var/log/sitb-ckg/consumer.log',
-        'producer' => '/var/log/sitb-ckg/producer.log',
+        'producer-pubsub' => '/var/log/sitb-ckg/producer-pubsub.log',
+        'producer-api' => '/var/log/sitb-ckg/producer-api.log',
     ],
     'ckg' => [
         'table_skrining' => 'ta_skrining',
-        'table_incoming' => 'tmp_incoming_ckg',
-        'table_outgoing' => 'tmp_outgoing_ckg',
-        'table_processed' => 'tmp_processed_ckg',
+        'table_laporan_so' => 'lapso',
+        'table_laporan_ro' => 'lapro',
+        'table_incoming' => 'tmp_ckg_incoming',
+        'table_outgoing' => 'tmp_ckg_outgoing',
+        'table_processed' => 'tmp_ckg_processed',
         'marker_field' => 'transactionSource',
-        'marker_value' => 'CKG-SITB',
-        'marker_consume' => 'STATUS-PASIEN-TB',
-		'marker_produce' => 'SKRINING-CKG-TB',
+        'marker_produce' => 'STATUS-PASIEN-TB',
+		'marker_consume' => 'SKRINING-CKG-TB',
     ]
 ];

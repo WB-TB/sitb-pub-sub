@@ -102,7 +102,7 @@ if [ -f "composer.json" ]; then
     if command -v composer &> /dev/null; then
         # Install dependencies as the sitb-ckg user
         # sudo -u $USERID composer install --no-dev --optimize-autoloader
-        sudo -u $USERID composer install
+        sudo -u $USERID composer update
         if [ $? -ne 0 ]; then
             echo "Error: Failed to install Composer dependencies"
             exit 1

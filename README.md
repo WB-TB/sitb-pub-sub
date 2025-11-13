@@ -37,7 +37,7 @@ Skrip ini akan:
 
 1. Instal dependensi:
 ```bash
-composer install
+composer update
 ```
 
 2. Siapkan kredensial Google Cloud:

@@ -6,7 +6,7 @@ require __DIR__ . '/lib/Boot.php';
 Boot::init(\PubSub\Producer::class);
 $cliParams = Boot::getCliParams();
 
-$updater = new \Ckg\Updater(Boot::getDatabase(), Boot::getConfig());
+$updater = new \CKG\Updater(Boot::getDatabase(), Boot::getConfig());
 if (isset($cliParams['mode']) && $cliParams['mode'] === 'pubsub') {
     $end = $cliParams['end'] ?? 'now';
     $updater->runPubSub('last', $end);

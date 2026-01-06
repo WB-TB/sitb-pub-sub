@@ -1,10 +1,10 @@
 <?php
 
 return [
-    'environment' => getenv('APP_ENV') ?: 'development',
+    'environment' => getenv('APP_ENV') ? getenv('APP_ENV') : 'development',
     'google_cloud' => [
-        'project_id' => getenv('GOOGLE_CLOUD_PROJECT') ?: 'ckg-tb-staging',
-        'credentials_path' => getenv('GOOGLE_APPLICATION_CREDENTIALS') ?: __DIR__ . '/credentials.json',
+        'project_id' => getenv('GOOGLE_CLOUD_PROJECT') ? getenv('GOOGLE_CLOUD_PROJECT') : 'ckg-tb-staging',
+        'credentials_path' => getenv('GOOGLE_APPLICATION_CREDENTIALS') ? getenv('GOOGLE_APPLICATION_CREDENTIALS') : __DIR__ . '/credentials.json',
         'debug' => getenv('GOOGLE_SDK_PHP_LOGGING') === 'true' ? true : false,
     ],
     'pubsub' => [
@@ -63,8 +63,8 @@ return [
     ],
     'ckg' => [
         'table_skrining' => 'ta_skrining',
-        'table_laporan_so' => 'lapso',
-        'table_laporan_ro' => 'lapro',
+        'table_laporan_so' => 'lap_tbc_03so',
+        'table_laporan_ro' => 'lap_tbc_03ro',
         'table_incoming' => 'tmp_ckg_incoming',
         'table_outgoing' => 'tmp_ckg_outgoing',
         'table_processed' => 'tmp_ckg_processed',

@@ -7,13 +7,7 @@ REPO_URL="https://github.com/WB-TB/sitb-pub-sub.git"
 TARGET_DIR="/opt/sitb-ckg"
 LOG_DIR="/var/log/sitb-ckg"
 SERVICE_CONSUMER_FILE="ckg-consumer.service"
-SERVICE_PRODUCER_PUBSUB_FILE="ckg-producer-pubsub.service"
-SERVICE_PRODUCER_API_FILE="ckg-producer-api.service"
-TIMER_PRODUCER_PUBSUB_FILE="ckg-producer-pubsub.timer"
-TIMER_PRODUCER_API_FILE="ckg-producer-api.timer"
 SERVICE_CONSUMER_NAME="ckg-consumer"
-SERVICE_PRODUCER_PUBSUB_NAME="ckg-producer-pubsub"
-SERVICE_PRODUCER_API_NAME="ckg-producer-api"
 
 INSTALL_MODE=$1
 if [ "$INSTALL_MODE" = "update" ]; then
@@ -138,10 +132,6 @@ echo "   -> Composer dependencies installed successfully"
 # Update the service file with the correct PHP path and working directory
 sed -i "s|/usr/bin/php|$PHPEXEC|g" "$TARGET_DIR/scripts/consumer/$SERVICE_CONSUMER_FILE"
 sed -i "s|/opt/sitb-ckg|$TARGET_DIR|g" "$TARGET_DIR/scripts/consumer/$SERVICE_CONSUMER_FILE"
-sed -i "s|/usr/bin/php|$PHPEXEC|g" "$TARGET_DIR/scripts/producer/$SERVICE_PRODUCER_PUBSUB_FILE"
-sed -i "s|/opt/sitb-ckg|$TARGET_DIR|g" "$TARGET_DIR/scripts/producer/$SERVICE_PRODUCER_PUBSUB_FILE"
-sed -i "s|/usr/bin/php|$PHPEXEC|g" "$TARGET_DIR/scripts/producer/$SERVICE_PRODUCER_API_FILE"
-sed -i "s|/opt/sitb-ckg|$TARGET_DIR|g" "$TARGET_DIR/scripts/producer/$SERVICE_PRODUCER_API_FILE"
 
 # Update init.d scripts with correct paths
 sed -i "s|/opt/sitb-ckg|$TARGET_DIR|g" "$TARGET_DIR/scripts/consumer/ckg-consumer"
@@ -161,25 +151,17 @@ else
 fi
 
 # Install services based on system manager
-echo " + Installing ckg-consumer and ckg-producer services..."
+echo " + Installing ckg-consumer service and ckg-producer cronjob..."
 echo ""
 echo " ----------------------------------------"
 
 if [ "$SYSTEM_MANAGER" = "systemd" ]; then
-    # Install systemd services
-    echo " + Copying service files to /etc/systemd/system/"
+    # Install systemd consumer service
+    echo " + Copying consumer service file to /etc/systemd/system/"
     cp "$TARGET_DIR/scripts/consumer/$SERVICE_CONSUMER_FILE" "/etc/systemd/system/"
-    cp "$TARGET_DIR/scripts/producer/$SERVICE_PRODUCER_PUBSUB_FILE" "/etc/systemd/system/"
-    cp "$TARGET_DIR/scripts/producer/$SERVICE_PRODUCER_API_FILE" "/etc/systemd/system/"
-    cp "$TARGET_DIR/scripts/producer/$TIMER_PRODUCER_PUBSUB_FILE" "/etc/systemd/system/"
-    cp "$TARGET_DIR/scripts/producer/$TIMER_PRODUCER_API_FILE" "/etc/systemd/system/"
 
     # Set proper permissions
     chmod 644 "/etc/systemd/system/$SERVICE_CONSUMER_FILE"
-    chmod 644 "/etc/systemd/system/$SERVICE_PRODUCER_PUBSUB_FILE"
-    chmod 644 "/etc/systemd/system/$SERVICE_PRODUCER_API_FILE"
-    chmod 644 "/etc/systemd/system/$TIMER_PRODUCER_PUBSUB_FILE"
-    chmod 644 "/etc/systemd/system/$TIMER_PRODUCER_API_FILE"
 
     # Reload systemd to recognize the new service
     echo " + Reloading systemd daemon..."
@@ -189,14 +171,7 @@ if [ "$SYSTEM_MANAGER" = "systemd" ]; then
     echo " + Enabling $SERVICE_CONSUMER_NAME service..."
     systemctl enable "$SERVICE_CONSUMER_NAME.service"
 
-    echo " + Enabling $SERVICE_PRODUCER_NAME service and timer..."
-    systemctl enable "$SERVICE_PRODUCER_PUBSUB_NAME.service"
-    systemctl enable "$SERVICE_PRODUCER_API_NAME.service"
-    systemctl enable "$SERVICE_PRODUCER_PUBSUB_NAME.timer"
-    systemctl enable "$SERVICE_PRODUCER_API_NAME.timer"
-
     if [ "$INSTALL_MODE" = "fresh" ]; then
-        
         # Start the service
         echo " + Starting $SERVICE_CONSUMER_NAME service..."
         systemctl start "$SERVICE_CONSUMER_NAME.service"
@@ -204,12 +179,6 @@ if [ "$SYSTEM_MANAGER" = "systemd" ]; then
         # Check service status
         echo " + Checking service status..."
         systemctl status "$SERVICE_CONSUMER_NAME.service"
-
-        echo " + Starting $SERVICE_PRODUCER_PUBSUB_NAME timer..."
-        systemctl start "$SERVICE_PRODUCER_PUBSUB_NAME.timer"
-
-        echo " + Starting $SERVICE_PRODUCER_API_NAME timer..."
-        systemctl start "$SERVICE_PRODUCER_API_NAME.timer"
     else
         # Restart the service
         echo " + Restarting $SERVICE_CONSUMER_NAME service..."
@@ -218,22 +187,54 @@ if [ "$SYSTEM_MANAGER" = "systemd" ]; then
         # Check service status
         echo " + Checking service status..."
         systemctl status "$SERVICE_CONSUMER_NAME.service"
-
-        echo " + Restarting $SERVICE_PRODUCER_PUBSUB_NAME timer..."
-        systemctl restart "$SERVICE_PRODUCER_PUBSUB_NAME.timer"
-
-        echo " + Restarting $SERVICE_PRODUCER_API_NAME timer..."
-        systemctl restart "$SERVICE_PRODUCER_API_NAME.timer"
     fi
 
-    # Check if both services started successfully
-    if systemctl is-active --quiet "$SERVICE_CONSUMER_NAME.service" && systemctl is-active --quiet "$SERVICE_PRODUCER_PUBSUB_NAME.timer"; then
+    # Setup cronjobs for producer services (works on both systemd and init.d)
+    echo " + Setting up cronjobs for producer services..."
+    
+    # Remove existing cronjobs for ckg-producer if they exist
+    if [ -f "/etc/cron.d/ckg-producer" ]; then
+        echo "   -> Removing existing cronjobs..."
+        rm -f "/etc/cron.d/ckg-producer"
+    fi
+    
+    # Create cronjob file for producer services
+    echo "   -> Creating cronjob file /etc/cron.d/ckg-producer"
+    cat > "/etc/cron.d/ckg-producer" << EOF
+# CKG Producer Cronjobs
+# Run ckg-producer pubsub or api daily at 2:00 AM
+0 2 * * * root $TARGET_DIR/scripts/producer/ckg-producer >> /var/log/ckg-producer.log 2>&1
+EOF
+    
+    # Set proper permissions for cron file
+    chmod 644 "/etc/cron.d/ckg-producer"
+    
+    # Reload cron service to recognize new cronjobs
+    echo "   -> Reloading cron service..."
+    if command -v systemctl &> /dev/null && systemctl is-active --quiet cron; then
+        systemctl reload cron
+    elif command -v systemctl &> /dev/null && systemctl is-active --quiet crond; then
+        systemctl reload crond
+    fi
+    
+    echo "   -> Cronjobs configured successfully"
+
+    if [ "$INSTALL_MODE" = "fresh" ]; then
+        echo " + Producer services will run via cronjobs at scheduled times"
+        echo "   -> ckg-producer pubsub or api: Daily at 2:00 AM"
+    else
+        echo " + Producer cronjobs updated"
+        echo "   -> ckg-producer pubsub or api: Daily at 2:00 AM"
+    fi
+
+    # Check if consumer service started successfully
+    if systemctl is-active --quiet "$SERVICE_CONSUMER_NAME.service"; then
         echo ""
         if [ "$INSTALL_MODE" = "fresh" ]; then
             echo "Installation completed successfully!"
             echo ""
             echo "Repository installed at: $TARGET_DIR"
-            echo "Consumer service has been installed and started"    
+            echo "Consumer service has been installed and started"
         else
             echo "Update completed successfully!"
             echo ""
@@ -251,15 +252,12 @@ if [ "$SYSTEM_MANAGER" = "systemd" ]; then
         echo "    Stop service:     sudo systemctl stop ckg-consumer.service"
         echo "    Restart service:  sudo systemctl restart ckg-consumer.service"
         echo "    Check status:     sudo systemctl status ckg-consumer.service"
-        echo "    View logs:       sudo journalctl -u ckg-consumer.service -f"
-        echo "  Producer Pub/Sub Service:"
-        echo "    Start service:    sudo systemctl start ckg-producer-pubsub.timer"
-        echo "    View logs:       sudo journalctl -u ckg-producer-pubsub.timer -f"
-        echo "    Check timer:     sudo systemctl status ckg-producer-pubsub.timer"
-        echo "  Producer API Service:"
-        echo "    Start service:    sudo systemctl start ckg-producer-api.timer"
-        echo "    View logs:       sudo journalctl -u ckg-producer-api.timer -f"
-        echo "    Check timer:     sudo systemctl status ckg-producer-api.timer"
+        echo "    View logs:        sudo journalctl -u ckg-consumer.service -f"
+        echo "  Producer Services (Cronjobs):"
+        echo "    Schedule:         /etc/cron.d/ckg-producer"
+        echo "    Runs:             Daily at 2:00 AM"
+        echo "    View log:         sudo tail -f /var/log/ckg-producer.log"
+        echo "    Manually run:     sudo $TARGET_DIR/scripts/producer/ckg-producer [pubsub|api]"
         echo ""
     else
         echo ""
@@ -269,65 +267,92 @@ if [ "$SYSTEM_MANAGER" = "systemd" ]; then
             echo "   -> [ERROR] Failed to update services properly"
         fi
         echo "Consumer service status: $(systemctl is-active "$SERVICE_CONSUMER_NAME.service")"
-        echo "Producer timer Pub/Sub status: $(systemctl is-active "$SERVICE_PRODUCER_PUBSUB_NAME.timer")"
-        echo "Producer timer API status: $(systemctl is-active "$SERVICE_PRODUCER_API_NAME.timer")"
         echo ""
         exit 1
     fi
 else
-    # Install init.d services
-    echo " + Copying init.d scripts to /etc/init.d/"
+    # Install init.d consumer service
+    echo " + Copying init.d consumer script to /etc/init.d/"
     cp "$TARGET_DIR/scripts/consumer/ckg-consumer" "/etc/init.d/"
-    cp "$TARGET_DIR/scripts/producer/ckg-producer" "/etc/init.d/"
-
+    
     # Set proper permissions
     chmod 755 "/etc/init.d/ckg-consumer"
-    chmod 755 "/etc/init.d/ckg-producer"
 
-    # Enable services to start on boot using chkconfig if available
+    # Enable consumer service to start on boot using chkconfig if available
     if command -v chkconfig &> /dev/null; then
-        echo " + Enabling services with chkconfig..."
+        echo " + Enabling consumer service with chkconfig..."
         chkconfig --add ckg-consumer
-        chkconfig --add ckg-producer
         chkconfig ckg-consumer on
-        chkconfig ckg-producer on
     elif command -v update-rc.d &> /dev/null; then
-        echo " + Enabling services with update-rc.d..."
+        echo " + Enabling consumer service with update-rc.d..."
         update-rc.d ckg-consumer defaults
-        update-rc.d ckg-producer defaults
     else
-        echo "   -> [WARNING] Neither chkconfig nor update-rc.d found. Services not enabled for auto-start."
+        echo "   -> [WARNING] Neither chkconfig nor update-rc.d found. Consumer service not enabled for auto-start."
     fi
+
+    # Setup cronjobs for producer services
+    echo " + Setting up cronjobs for producer services..."
+    
+    # Remove existing cronjobs for ckg-producer if they exist
+    if [ -f "/etc/cron.d/ckg-producer" ]; then
+        echo "   -> Removing existing cronjobs..."
+        rm -f "/etc/cron.d/ckg-producer"
+    fi
+    
+    # Create cronjob file for producer services
+    echo "   -> Creating cronjob file /etc/cron.d/ckg-producer"
+    cat > "/etc/cron.d/ckg-producer" << EOF
+# CKG Producer Cronjobs
+# Run ckg-producer pubsub or api daily at 2:00 AM
+0 2 * * * root $TARGET_DIR/scripts/producer/ckg-producer >> /var/log/ckg-producer.log 2>&1
+EOF
+    
+    # Set proper permissions for cron file
+    chmod 644 "/etc/cron.d/ckg-producer"
+    
+    # Reload cron service to recognize new cronjobs
+    echo "   -> Reloading cron service..."
+    if command -v service &> /dev/null; then
+        service cron reload 2>/dev/null || service crond reload 2>/dev/null
+    elif [ -f /etc/init.d/cron ]; then
+        /etc/init.d/cron reload 2>/dev/null
+    elif [ -f /etc/init.d/crond ]; then
+        /etc/init.d/crond reload 2>/dev/null
+    fi
+    
+    echo "   -> Cronjobs configured successfully"
 
     if [ "$INSTALL_MODE" = "fresh" ]; then
         # Start the services
         echo " + Starting ckg-consumer service..."
         /etc/init.d/ckg-consumer start
 
-        echo " + Starting ckg-producer service..."
-        /etc/init.d/ckg-producer start
+        echo " + Producer services will run via cronjobs at scheduled times"
+        echo "   -> ckg-producer pubsub or api: Daily at 2:00 AM"
     else
-        # Restart the services
+        # Restart the consumer service
         echo " + Restarting ckg-consumer service..."
         /etc/init.d/ckg-consumer restart
 
-        echo " + Restarting ckg-producer service..."
-        /etc/init.d/ckg-producer restart
+        echo " + Producer cronjobs updated"
+        echo "   -> ckg-producer pubsub or api: Daily at 2:00 AM"
     fi
 
-    # Check if both services started successfully
-    if /etc/init.d/ckg-consumer status &> /dev/null && /etc/init.d/ckg-producer status &> /dev/null; then
+    # Check if consumer service started successfully
+    if /etc/init.d/ckg-consumer status &> /dev/null; then
         echo ""
         if [ "$INSTALL_MODE" = "fresh" ]; then
             echo "Installation completed successfully!"
             echo ""
             echo "Repository installed at: $TARGET_DIR"
-            echo "Consumer and Producer services have been installed and started"    
+            echo "Consumer service has been installed and started"
+            echo "Producer services will run via cronjobs"
         else
             echo "Update completed successfully!"
             echo ""
             echo "Repository at $TARGET_DIR has been updated"
-            echo "Consumer and Producer services have been updated and restarted"    
+            echo "Consumer service has been updated and restarted"
+            echo "Producer cronjobs have been updated"
         fi
         
         echo ""
@@ -340,20 +365,20 @@ else
         echo "    Stop service:     sudo service ckg-consumer stop"
         echo "    Restart service:  sudo service ckg-consumer restart"
         echo "    Check status:     sudo service ckg-consumer status"
-        echo "    View logs:       sudo tail -f /var/log/ckg-consumer.log"
-        echo "  Producer Service:"
-        echo "    Start service:    sudo service ckg-producer start"
-        echo "    Stop service:     sudo service ckg-producer stop"
-        echo "    Restart service:  sudo service ckg-producer restart"
-        echo "    Check status:     sudo service ckg-producer status"
-        echo "    View logs:       sudo tail -f /var/log/ckg-producer.log"
+        echo "    View logs:        sudo tail -f /var/log/ckg-consumer.log"
+        echo "  Producer Services (Cronjobs):"
+        echo "    Schedule:         /etc/cron.d/ckg-producer"
+        echo "    Runs:             Daily at 2:00 AM"
+        echo "    View log:         sudo tail -f /var/log/ckg-producer.log"
+        echo "    Manually run:     sudo $TARGET_DIR/scripts/producer/ckg-producer [pubsub|api]"
         echo ""
     else
         echo "   -> Error: Failed to install services properly"
         echo "   -> Consumer service status:"
         /etc/init.d/ckg-consumer status
-        echo "   -> Producer service status:"
-        /etc/init.d/ckg-producer status
+        echo ""
+        exit 1
+    fi
         echo ""
         exit 1
     fi
@@ -407,6 +432,15 @@ if [ "$INSTALL_MODE" = "fresh" ]; then
 
     if [ "$NEED_CONFIGURE" = "yes" ]; then
         echo "   -> [NOTE] Please restart service after update config.php and credentials.json."
+        if [ "$SYSTEM_MANAGER" = "systemd" ]; then
+            echo "      To restart the service, run:"
+            echo "        sudo systemctl restart $SERVICE_CONSUMER_NAME.service"
+        else
+            echo "      To restart the service, run:"
+            echo "        sudo service ckg-consumer restart"
+        fi
+        echo "      Cronjobs will automatically run at scheduled times"
+        echo "      To manually run producer: sudo $TARGET_DIR/scripts/producer/ckg-producer [pubsub|api]"
     fi
 fi
 exit 0

@@ -2,6 +2,7 @@
 
 return [
     'environment' => getenv('APP_ENV') ? getenv('APP_ENV') : 'development',
+    'producer_mode' => 'api', // 'pubsub' or 'api'
     'google_cloud' => [
         'project_id' => getenv('GOOGLE_CLOUD_PROJECT') ? getenv('GOOGLE_CLOUD_PROJECT') : 'ckg-tb-staging',
         'credentials_path' => getenv('GOOGLE_APPLICATION_CREDENTIALS') ? getenv('GOOGLE_APPLICATION_CREDENTIALS') : __DIR__ . '/credentials.json',

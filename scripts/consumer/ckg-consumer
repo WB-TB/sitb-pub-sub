@@ -27,7 +27,8 @@ fi
 # Configuration
 NAME="ckg-consumer"
 DESC="CKG Consumer Service"
-CONSUMER_SCRIPT="/opt/sitb-ckg/scripts/consumer/run-consumer.sh"
+TARGET_DIR="/opt/sitb-ckg"
+CONSUMER_SCRIPT="$TARGET_DIR/scripts/consumer/run-consumer.sh"
 PIDFILE="/var/run/${NAME}.pid"
 LOGFILE="/var/log/${NAME}.log"
 

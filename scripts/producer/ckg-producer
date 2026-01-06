@@ -1,35 +1,51 @@
 #!/bin/bash
-#
-# ckg-producer        CKG Producer Service
-#
-# chkconfig: 2345 90 10
-# description: CKG Producer service for processing messages from Pub/Sub
-# processname: ckg-producer
-# pidfile: /var/run/ckg-producer.pid
 
-### BEGIN INIT INFO
-# Provides:          ckg-producer
-# Required-Start:    $remote_fs $syslog
-# Required-Stop:     $remote_fs $syslog
-# Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
-# Short-Description: CKG Producer Service
-# Description:       CKG Producer service for processing messages from Pub/Sub
-### END INIT INFO
+TARGET_DIR="/opt/sitb-ckg"
 
-# Source function library
-if [ -f /etc/rc.d/init.d/functions ]; then
-    . /etc/rc.d/init.d/functions
-elif [ -f /lib/lsb/init-functions ]; then
-    . /lib/lsb/init-functions
+# CKG Producer Script
+# Usage: $TARGET_DIR/ckg-producer [pubsub|api]
+
+# Check if PHP is installed
+PHPEXEC=`which php`
+if [ -z "$PHPEXEC" ]; then
+    echo "Error: PHP not found."
+    exit 1
 fi
 
-# Configuration
-NAME="ckg-producer"
-DESC="CKG Producer Service"
-PRODUCER_SCRIPT="/opt/sitb-ckg/scripts/producer/run-producer.sh"
-PIDFILE="/var/run/${NAME}.pid"
-LOGFILE="/var/log/${NAME}.log"
+# Check if the PHP executable exists and is executable
+if [ ! -x "$PHPEXEC" ]; then
+    echo "Error: PHP executable not found or not executable: $PHPEXEC"
+    exit 1
+fi
+
+# Get service type from argument
+SERVICE_TYPE=$1
+
+# Validate service type
+if [ -z "$SERVICE_TYPE" ]; then
+    cd "$TARGET_DIR"
+    MODE=`php -r '$config=require("./config.php"); echo $config["producer_mode"];'`
+    if [ "$MODE" = "pubsub" ] || [ "$MODE" = "api" ]; then
+        SERVICE_TYPE=$MODE
+    else
+        SERVICE_TYPE="api"
+    fi
+fi
+
+if [ "$SERVICE_TYPE" != "pubsub" ] && [ "$SERVICE_TYPE" != "api" ]; then
+    echo "Error: Invalid service type '$SERVICE_TYPE'."
+    echo "Usage: $0 [pubsub|api]"
+    echo ""
+    echo "Examples:"
+    echo "  $0 pubsub  - Run pubsub producer"
+    echo "  $0 api     - Run api producer"
+    exit 1
+fi
+
+# Set service-specific files
+PIDFILE="/var/run/ckg-producer-${SERVICE_TYPE}.pid"
+LOGFILE="/var/log/ckg-producer-${SERVICE_TYPE}.log"
+PRODUCER_SCRIPT="$TARGET_DIR/producer.php"
 
 # Check if producer script exists
 if [ ! -f "$PRODUCER_SCRIPT" ]; then
@@ -58,141 +74,32 @@ is_running() {
     return 1
 }
 
-# Start the service
-do_start() {
-    echo -n "Starting $DESC: "
-    
-    if is_running; then
-        echo "already running (PID: $(get_pid))"
-        return 0
-    fi
-    
-    # Start the producer in background
-    nohup "$PRODUCER_SCRIPT" >> "$LOGFILE" 2>&1 &
-    local pid=$!
-    
-    # Save PID
-    echo $pid > "$PIDFILE"
-    
-    # Give it a moment to start
-    sleep 1
-    
-    if is_running; then
-        echo "started (PID: $pid)"
-        return 0
-    else
-        echo "failed to start"
-        rm -f "$PIDFILE"
-        return 1
-    fi
-}
+# Start the producer
+echo "Starting CKG Producer (${SERVICE_TYPE})..."
+echo "Using PHP: $PHPEXEC"
+echo "Log file: $LOGFILE"
 
-# Stop the service
-do_stop() {
-    echo -n "Stopping $DESC: "
-    
-    if ! is_running; then
-        echo "not running"
-        rm -f "$PIDFILE"
-        return 0
-    fi
-    
-    local pid=$(get_pid)
-    
-    # Try graceful shutdown first
-    kill -TERM "$pid" 2>/dev/null
-    
-    # Wait for process to terminate
-    local count=0
-    while is_running && [ $count -lt 30 ]; do
-        sleep 1
-        count=$((count + 1))
-    done
-    
-    # Force kill if still running
-    if is_running; then
-        echo -n "force killing... "
-        kill -KILL "$pid" 2>/dev/null
-        sleep 1
-    fi
-    
-    if is_running; then
-        echo "failed to stop"
-        return 1
-    else
-        echo "stopped"
-        rm -f "$PIDFILE"
-        return 0
-    fi
-}
+if is_running; then
+    echo "Error: Producer is already running (PID: $(get_pid))"
+    exit 1
+fi
 
-# Restart the service
-do_restart() {
-    echo "Restarting $DESC: "
-    do_stop
-    sleep 2
-    do_start
-}
+# Start the producer in background with service type argument
+nohup "$PRODUCER_SCRIPT" "- --mode $SERVICE_TYPE" >> "$LOGFILE" 2>&1 &
+local pid=$!
 
-# Reload the service
-do_reload() {
-    echo -n "Reloading $DESC: "
-    
-    if ! is_running; then
-        echo "not running"
-        return 1
-    fi
-    
-    local pid=$(get_pid)
-    kill -HUP "$pid" 2>/dev/null
-    
-    if [ $? -eq 0 ]; then
-        echo "reloaded"
-        return 0
-    else
-        echo "failed to reload"
-        return 1
-    fi
-}
+# Save PID
+echo $pid > "$PIDFILE"
 
-# Get service status
-do_status() {
-    if is_running; then
-        local pid=$(get_pid)
-        echo "$DESC is running (PID: $pid)"
-        return 0
-    else
-        echo "$DESC is not running"
-        return 1
-    fi
-}
+# Give it a moment to start
+sleep 2
 
-# Main script logic
-case "$1" in
-    start)
-        do_start
-        exit $?
-        ;;
-    stop)
-        do_stop
-        exit $?
-        ;;
-    restart)
-        do_restart
-        exit $?
-        ;;
-    reload|force-reload)
-        do_reload
-        exit $?
-        ;;
-    status)
-        do_status
-        exit $?
-        ;;
-    *)
-        echo "Usage: $0 {start|stop|restart|reload|force-reload|status}"
-        exit 1
-        ;;
-esac
-
-exit 0
+if is_running; then
+    echo "Producer started successfully (PID: $pid)"
+    echo "You can view logs with: tail -f $LOGFILE"
+    exit 0
+else
+    echo "Error: Failed to start producer"
+    rm -f "$PIDFILE"
+    exit 1
+fi

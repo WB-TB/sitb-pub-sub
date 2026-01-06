@@ -57,7 +57,7 @@ CREATE TABLE `ckg_pubsub_incoming` (
 ) ENGINE=InnoDB COMMENT='Pub/Sub Incoming Messages Table';
 ```
 
-**Buat Tabel `ckg_pubsub_processed`**
+**Buat Tabel `ckg_pubsub_outgoing`**
 ```sql
 CREATE TABLE `ckg_pubsub_outgoing` (
   `terduga_id` varchar(100) NOT NULL COMMENT 'Message ID from Pub/Sub',
@@ -210,18 +210,6 @@ Semua operasi dicatat ke systemd journal dengan tingkat log yang dapat dikonfigu
 
 - **Layanan Consumer**: `/var/log/sitb-ckg/consumer.log`
 - **Layanan Producer (API dan Pub/Sub)**: `/var/log/sitb-ckg/producer.log`
-
-Lihat log menggunakan:
-```bash
-# Log consumer
-sudo journalctl -u ckg-consumer.service -f
-
-# Log producer Pub/Sub
-sudo journalctl -u ckg-producer-pubsub.timer -f
-
-# Log producer API
-sudo journalctl -u ckg-producer-api.timer -f
-```
 
 ## Pengujian
 

@@ -14,7 +14,7 @@ if [ "$INSTALL_MODE" = "update" ]; then
     echo "Starting SITB-CKG update..."
 else
     INSTALL_MODE="fresh"
-    echo "Starting installation of SITB-CKG..."
+    echo "Starting installation of SITB-CKG ($INSTALL_MODE)..."
 fi
 
 # Check if running as root
@@ -225,7 +225,7 @@ echo " + Repository cloned/updated successfully at $TARGET_DIR"
 echo " + Detecting system manager..."
 SYSTEM_MANAGER="init.d"
 
-if command -v systemctl &> /dev/null && [ -d /etc/systemd/system ]; then
+if command -v systemctl &> /dev/null && [ -d /run/systemd/system ]; then
     SYSTEM_MANAGER="systemd"
     echo "   -> System manager detected: systemd"
 else
@@ -234,8 +234,6 @@ fi
 
 # Install services based on system manager
 echo " + Installing ckg-consumer service and ckg-producer cronjob..."
-echo ""
-echo " ----------------------------------------"
 
 if [ "$SYSTEM_MANAGER" = "systemd" ]; then
     # Install systemd consumer service
@@ -411,6 +409,7 @@ EOF
     if [ "$INSTALL_MODE" = "fresh" ]; then
         # Start the services
         echo " + Starting ckg-consumer service..."
+        echo -n "   -> "
         /etc/init.d/ckg-consumer start
 
         echo " + Producer services will run via cronjobs at scheduled times"
@@ -418,11 +417,15 @@ EOF
     else
         # Restart the consumer service
         echo " + Restarting ckg-consumer service..."
+        echo -n "   -> "
         /etc/init.d/ckg-consumer restart
 
         echo " + Producer cronjobs updated"
         echo "   -> ckg-producer pubsub or api: Daily at 2:00 AM"
     fi
+
+    echo ""
+    echo " ----------------------------------------"
 
     # Check if consumer service started successfully
     if /etc/init.d/ckg-consumer status &> /dev/null; then
@@ -466,9 +469,6 @@ EOF
         echo "   -> Error: Failed to install services properly"
         echo "   -> Consumer service status:"
         /etc/init.d/ckg-consumer status
-        echo ""
-        exit 1
-    fi
         echo ""
         exit 1
     fi

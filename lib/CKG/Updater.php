@@ -281,7 +281,7 @@ class Updater
 
     private function removePubSubMessages() {
         $incomingTable = $this->incomingTable;
-        $sqlIncoming = "DELETE FROM {$incomingTable} WHERE created_at < NOW() - INTERVAL 1 DAY";
+        $sqlIncoming = "DELETE FROM {$incomingTable} WHERE processed_at IS NOT NULL AND created_at < NOW() - INTERVAL 1 DAY";
 
         $outgoingTable = $this->outgoingTable;
         $sqlOutgoing = "DELETE FROM {$outgoingTable} WHERE created_at < NOW() - INTERVAL 1 DAY";

@@ -13,7 +13,7 @@ CREATE TABLE `ckg_pubsub_incoming` (
 -- ckg_pubsub_outgoing definition
 
 CREATE TABLE `ckg_pubsub_outgoing` (
-  `id` varchar(100) NOT NULL COMMENT 'Message ID from Pub/Sub',
+  `terduga_id` varchar(100) NOT NULL COMMENT 'Message ID from Pub/Sub',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Record create timestamp',
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Record update timestamp',
   PRIMARY KEY (`id`),

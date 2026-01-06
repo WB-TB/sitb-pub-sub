@@ -14,7 +14,6 @@ class Receiver
     private $config;
     private Logger $logger;
     private $incomingTable;
-    private $processedTable;
     // private $skriningTable;
     private $skriningModel;
     
@@ -23,7 +22,6 @@ class Receiver
         $this->config = $config;
         $this->logger = \Boot::getLogger();
         $this->incomingTable = $this->config['ckg']['table_incoming'] ? $this->config['ckg']['table_incoming'] : 'ckg_pubsub_incoming';
-        $this->processedTable = $this->config['ckg']['table_processed'] ? $this->config['ckg']['table_processed'] : 'ckg_pubsub_processed';
         // $this->skriningTable = $this->config['ckg']['table_skrining'] ? $this->config['ckg']['table_skrining'] : 'skrining_tb';
         $this->skriningModel = new TaSkrining($db, $config);
     }
@@ -135,9 +133,9 @@ class Receiver
             return [];
         }
 
-        $processedTable = $this->processedTable;
+        $incomingTable = $this->incomingTable;
         $placeholders = implode(',', array_fill(0, count($exists), '?'));
-        $query = "SELECT ckg_id, id FROM {$processedTable} WHERE ckg_id IN ({$placeholders})";
+        $query = "SELECT ckg_id, id FROM {$incomingTable} WHERE ckg_id IN ({$placeholders})";
         $stmt = $this->db->prepare($query);
         $stmt->execute($exists);
         $result = $stmt->fetchAll(\PDO::FETCH_KEY_PAIR);
@@ -163,16 +161,10 @@ class Receiver
 
         list($skriningId, $update) = $this->skriningModel->save($skrining);
         if ($skriningId) {
-            $processedTable = $this->processedTable;
-            if ($update) {
-                $query = "UPDATE {$processedTable} SET processed_at = NOW() WHERE id = ?";
-                $stmt2 = $this->db->prepare($query);
-                $stmt2->execute([$skrining->pasien_ckg_id]);
-            } else {
-                $query2 = "INSERT INTO {$processedTable} (id, ckg_id, processed_at) VALUES (?, ?, NOW())";
-                $stmt2 = $this->db->prepare($query2);
-                $stmt2->execute([$skrining->pasien_ckg_id, $skrining->pasien_ckg_id]);
-            }
+            $incomingTable = $this->incomingTable;
+            $query = "UPDATE {$incomingTable} SET processed_at = NOW() WHERE id = ?";
+            $stmt2 = $this->db->prepare($query);
+            $stmt2->execute([$skrining->pasien_ckg_id]);
         }
         // Jika skriningId tidak null, berarti ini update
         /*if ($skriningId) {
@@ -195,8 +187,8 @@ class Receiver
             $stmt->execute($params);
             $skriningId = $this->db->lastInsertId();
 
-            $processedTable = $this->processedTable;
-            $query2 = "INSERT INTO {$processedTable} (id, ckg_id, processed_at) VALUES (?, ?, NOW())";
+            $incomingTable = $this->incomingTable;
+            $query2 = "INSERT INTO {$incomingTable} (id, ckg_id, processed_at) VALUES (?, ?, NOW())";
             $stmt2 = $this->db->prepare($query2);
             $stmt2->execute([$skrining->pasien_ckg_id, $skrining->pasien_ckg_id]);
 

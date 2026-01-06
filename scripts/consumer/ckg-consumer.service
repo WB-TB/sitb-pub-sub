@@ -8,7 +8,7 @@ Type=simple
 User=sitb-ckg
 Group=sitb-ckg
 WorkingDirectory=/opt/sitb-ckg
-ExecStart=/usr/bin/php -f /opt/sitb-ckg/consumer.php
+ExecStart=/opt/sitb-ckg/scripts/consumer/run-consumer.sh
 Restart=always
 RestartSec=10
 

@@ -29,10 +29,15 @@ class Updater
         // Create producer instance
         $this->producer = new Producer($this->config);
 
-        // Show topic info
-        $info = $this->producer->getTopicInfo();
-        echo "Topic Info:\n";
-        print_r($info);
+        if (isset($this->config['producer_mode']) && $this->config['producer_mode'] === 'pubsub') {
+            $this->logger->info("Google Pub/Sub mode selected for Updater");
+            // Show topic info
+            $info = $this->producer->getTopicInfo();
+            echo "Topic Info:\n";
+            print_r($info);
+        } else {
+            $this->logger->info("API Client mode selected for Updater");
+        }
     }
 
     public function runPubSub($start, $end) {

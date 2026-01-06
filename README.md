@@ -5,8 +5,8 @@ Integrasi data ASIK CKG dari aplikasi SITB melalui Google Pub/Sub dan Restful AP
 
 Ini adalah implementasi PHP untuk mengintegrasikan data SIBT dengan Google Cloud Pub/Sub. Implementasi ini mencakup:
 
-- **Producer**: Mengirim pesan ke topik Google Pub/Sub (mode Pub/Sub dan mode API)
-- **Consumer**: Berlangganan dan memproses pesan dari langganan Google Pub/Sub
+- **Producer**: Mengirim pesan ke CKG Server bersisi status perawatan TB pasien melalui topik Google Pub/Sub atau API sesuai pilihan konfigurasi
+- **Consumer**: Secara aktif menerima pesan dari Google Pub/Sub berisi data Skrining CKG untuk pasien **Terduga TB**
 - **Client**: Kelas dasar dengan fungsionalitas umum untuk producer dan consumer
 
 ## Fitur
@@ -14,13 +14,13 @@ Ini adalah implementasi PHP untuk mengintegrasikan data SIBT dengan Google Cloud
 - **Pemrosesan Batch**: Penerbitan dan pemrosesan batch yang efisien
 - **Retry Logic**: Mekanisme retry yang dapat dikonfigurasi dengan exponential backoff
 - **Logging Komprehensif**: Logging detail untuk debugging dan monitoring
-- **Layanan Systemd**: Manajemen layanan otomatis dengan timer
+- **Layanan Systemd/Initd**: Aplikasi berjalan pada linux server sebagai `background process` yang dikelola menggunakan Systemd atau Initd sesuai `system manager` yang digunakan oleh server. Script instalasi secara otomatis mendeteksi ini untuk menjalankan script yang benar.
 
 ## Instalasi CKG Service di SITB Server
 
 ### 1. Install menggunakan script
 
-Gunakan skrip instalasi satu baris:
+Gunakan skrip berikut untuk melakukan instalasi modul secara cepat:
 
 ```bash
 curl -sS https://raw.githubusercontent.com/WB-TB/sitb-pub-sub/main/scripts/install.sh | sudo sh

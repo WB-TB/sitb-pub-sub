@@ -128,7 +128,7 @@ class Boot {
         // Read local version
         $localVersionFile = APPDIR . '/version';
         if (!file_exists($localVersionFile)) {
-            $localVersion = '0.0.0';
+            return; // Skip version check if local version file doesn't exist
         }
         
         $localVersion = trim(file_get_contents($localVersionFile));

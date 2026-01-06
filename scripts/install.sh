@@ -359,4 +359,54 @@ else
     fi
 fi
 
+if [ "$INSTALL_MODE" = "fresh" ]; then
+    NEED_CONFIGURE="no"
+    # Check if credentials.json exists
+    echo ""
+    echo " ----------------------------------------"
+    echo " + Checking configuration files..."
+    if [ ! -f "$TARGET_DIR/credentials.json" ]; then
+        echo ""
+        echo "   -> [WARNING] credentials.json not found at $TARGET_DIR/credentials.json"
+        echo "   -> Please create this file with your Google Cloud credentials."
+        echo "   -> Example format:"
+        echo "   -> {"
+        echo "   ->   \"type\": \"service_account\","
+        echo "   ->   \"project_id\": \"your-project-id\","
+        echo "   ->   \"private_key_id\": \"...\","
+        echo "   ->   \"private_key\": \"...\","
+        echo "   ->   \"client_email\": \"...\","
+        echo "   ->   \"client_id\": \"...\","
+        echo "   ->   \"auth_uri\": \"https://accounts.google.com/o/oauth2/auth\","
+        echo "   ->   \"token_uri\": \"https://oauth2.googleapis.com/token\""
+        echo "   -> }"
+        echo ""
+        read -p "   -> Press Enter to continue after creating credentials.json..."
+        NEED_CONFIGURE="yes"
+    else
+        echo "   -> credentials.json found"
+    fi
+
+    # Prompt user to configure config.php
+    echo ""
+    echo " + Please configure settings in $TARGET_DIR/config.php"
+    echo "   -> Make sure to set the following required settings:"
+    echo "   -> - google_cloud.project_id"
+    echo "   -> - pubsub.default_subscription"
+    echo "   -> - pubsub.default_topic"
+    echo "   -> - api.base_url"
+    echo "   -> - api.api_key"
+    echo "   -> - Database connection settings"
+    echo ""
+    read -p "   -> Press Enter to continue after configuring config.php..."
+
+    echo ""
+    echo " ----------------------------------------"
+    echo " + Configuration check completed."
+    echo ""
+
+    if [ "$NEED_CONFIGURE" = "yes" ]; then
+        echo "   -> [NOTE] Please restart service after update config.php and credentials.json."
+    fi
+fi
 exit 0

@@ -46,7 +46,9 @@ class Boot {
 
         // initialize logger
         self::$logger = new Logger($logname);
-        self::$logger->pushHandler(new StreamHandler(self::$config['logging'][$lclass], self::$config['logging']['level']));     
+        self::$logger->pushHandler(new StreamHandler(self::$config['logging'][$lclass], self::$config['logging']['level']));    
+        
+        self::checkVersion();
 
         self::$initialized = true;
     }
@@ -115,5 +117,62 @@ class Boot {
             self::$db = new \Database\MySQL(self::$config);
         }
         return self::$db;
+    }
+
+    private static function checkVersion() {
+        $requiredPhpVersion = '7.4.0';
+        if (version_compare(PHP_VERSION, $requiredPhpVersion, '<')) {
+            throw new Exception("PHP version $requiredPhpVersion or higher is required. Current version: " . PHP_VERSION);
+        }
+
+        // Read local version
+        $localVersionFile = APPDIR . '/version';
+        if (!file_exists($localVersionFile)) {
+            return; // Skip version check if local version file doesn't exist
+        }
+        
+        $localVersion = trim(file_get_contents($localVersionFile));
+        
+        // Fetch remote version from GitHub
+        $remoteVersionUrl = 'https://raw.githubusercontent.com/WB-TB/sitb-pub-sub/main/version';
+        $remoteVersion = null;
+        
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 10,
+                'method' => 'GET'
+            ]
+        ]);
+        
+        $remoteVersionContent = @file_get_contents($remoteVersionUrl, false, $context);
+        
+        if ($remoteVersionContent !== false) {
+            $remoteVersion = trim($remoteVersionContent);
+        }
+        
+        // Compare versions
+        if ($remoteVersion !== null && version_compare($localVersion, $remoteVersion, '<')) {
+            // Local version is lower, run update script
+            $updateScript = __DIR__ . '/scripts/install.sh';
+            
+            if (file_exists($updateScript)) {
+                // Execute the update script
+                $output = [];
+                $returnCode = 0;
+                exec("sh " . escapeshellarg($updateScript) . " update 2>&1", $output, $returnCode);
+                
+                // Log the update process
+                if (isset(self::$logger)) {
+                    self::$logger->info("Updating from version $localVersion to $remoteVersion");
+                    self::$logger->info("Update output: " . implode("\n", $output));
+                    
+                    if ($returnCode === 0) {
+                        self::$logger->info("Update completed successfully");
+                    } else {
+                        self::$logger->error("Update failed with return code: $returnCode");
+                    }
+                }
+            }
+        }
     }
 }

@@ -23,7 +23,7 @@ class Updater
         $this->db = $db;
         $this->config = $config;
         $this->logger = \Boot::getLogger();
-        $this->outgoingTable = $this->config['ckg']['table_outgoing'] ?? 'ckg_pubsub_outgoing';
+        $this->outgoingTable = $this->config['ckg']['table_outgoing'] ? $this->config['ckg']['table_outgoing'] : 'ckg_pubsub_outgoing';
         $this->laporan = new LapTbc03($db, $config);
 
         // Create producer instance
@@ -137,7 +137,7 @@ class Updater
             $sql = "SELECT MAX(created_at) as last_timestamp FROM {$outgoingTable}";
             $result = $this->db->fetchOne($sql);
             
-            return $result['last_timestamp'] ?? null;
+            return $result['last_timestamp'] ? $result['last_timestamp'] : null;
         } catch (\Exception $e) {
             $this->logger->error("Failed to get last outgoing timestamp: " . $e->getMessage());
             return null;
@@ -168,7 +168,7 @@ class Updater
     private function sendViaApiClient(array $statusPasien) {
         if (count($statusPasien) > 0) {
             try {
-                    $apiConfig = $this->config['api'] ?? [];
+                    $apiConfig = $this->config['api'] ? $this->config['api'] : [];
                     $apiClient = new ApiClient($apiConfig);
                     $batchSize = $apiConfig['batch_size'] && $apiConfig['batch_size'] > 1 ? $apiConfig['batch_size'] : 100;
                     $endpoint = '/v1/ckg/tb/status-pasien';
@@ -221,7 +221,7 @@ class Updater
         if ($response['status_code'] == 200 || $response['status_code'] == 201) {
             $this->logger->info("Successfully sent status pasien via API Client. Items count: " . count($payload));
         } else {
-            $this->logger->error("Failed to send status pasien via API Client. Status Code: " . $response['status_code'] . " Response: " . ($response['body'] ?? 'No response body'));
+            $this->logger->error("Failed to send status pasien via API Client. Status Code: " . $response['status_code'] . " Response: " . ($response['body'] ? $response['body'] : 'No response body'));
         }
     }
 

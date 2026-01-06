@@ -22,9 +22,9 @@ class Receiver
         $this->db = $db;
         $this->config = $config;
         $this->logger = \Boot::getLogger();
-        $this->incomingTable = $this->config['ckg']['table_incoming'] ?? 'ckg_pubsub_incoming';
-        $this->processedTable = $this->config['ckg']['table_processed'] ?? 'ckg_pubsub_processed';
-        // $this->skriningTable = $this->config['ckg']['table_skrining'] ?? 'skrining_tb';
+        $this->incomingTable = $this->config['ckg']['table_incoming'] ? $this->config['ckg']['table_incoming'] : 'ckg_pubsub_incoming';
+        $this->processedTable = $this->config['ckg']['table_processed'] ? $this->config['ckg']['table_processed'] : 'ckg_pubsub_processed';
+        // $this->skriningTable = $this->config['ckg']['table_skrining'] ? $this->config['ckg']['table_skrining'] : 'skrining_tb';
         $this->skriningModel = new TaSkrining($db, $config);
     }
 

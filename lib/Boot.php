@@ -67,7 +67,7 @@ class Boot {
             return self::$cliParams;
         }
         
-        $argv = $GLOBALS['argv'] ?? [];
+        $argv = $GLOBALS['argv'] ? $GLOBALS['argv'] : [];
         
         // Skip the script name (argv[0])
         for ($i = 1; $i < count($argv); $i++) {

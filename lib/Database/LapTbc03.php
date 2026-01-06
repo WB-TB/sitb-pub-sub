@@ -25,8 +25,8 @@ class LapTbc03
     public function __construct(MySQL $db, array $config)
     {
         $this->db = $db;
-        $this->tableNameSo = $config['ckg']['table_laporan_so'] ?? 'lap_tbc_03so';
-        $this->tableNameRo = $config['ckg']['table_laporan_ro'] ?? 'lap_tbc_03ro';
+        $this->tableNameSo = $config['ckg']['table_laporan_so'] ? $config['ckg']['table_laporan_so'] : 'lap_tbc_03so';
+        $this->tableNameRo = $config['ckg']['table_laporan_ro'] ? $config['ckg']['table_laporan_ro'] : 'lap_tbc_03ro';
     }
 
     /**

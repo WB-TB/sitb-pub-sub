@@ -26,7 +26,7 @@ class TaSkrining
     {
         $this->db = $db;
         $this->logger = \Boot::getLogger();
-        $this->tableName = $config['ckg']['table_skrining'] ?? 'ta_skrining';
+        $this->tableName = $config['ckg']['table_skrining'] ? $config['ckg']['table_skrining'] : 'ta_skrining';
     }
     
     /**

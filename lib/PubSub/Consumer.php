@@ -164,7 +164,7 @@ class Consumer extends Client
                 
                 // Decompress message if needed
                 if (!empty($attributes['compressed']) && $attributes['compressed'] === 'true') {
-                    $messageData = $this->decompressMessage($messageData, $attributes['compression'] ?? 'gzip');
+                    $messageData = $this->decompressMessage($messageData, $attributes['compression'] ? $attributes['compression'] : 'gzip');
                 }
 
                 // jalankan callback runner
@@ -228,7 +228,7 @@ class Consumer extends Client
         try {
             $subscription = $this->pubSubClient->subscription($this->subscriptionName);
             $info = $subscription->info();
-            return $info['acknowledgementDeadlineCount'] ?? 0;
+            return $info['acknowledgementDeadlineCount'] ? $info['acknowledgementDeadlineCount'] : 0;
         } catch (\Exception $e) {
             $this->logger->warning("Failed to get outstanding message count: " . $e->getMessage());
             return 0;

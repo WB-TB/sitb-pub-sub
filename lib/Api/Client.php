@@ -15,9 +15,9 @@ class Client
     public function __construct(array $config)
     {
         $this->baseUrl = rtrim($config['base_url'], '/') . '/';
-        $this->timeout = $config['timeout'] ?? 60;
-        $this->apiKey = $config['api_key'] ?? '';
-        $this->apiHeader = $config['api_header'] ?? 'X-API-Key:';
+        $this->timeout = $config['timeout'] ? $config['timeout'] : 60;
+        $this->apiKey = $config['api_key'] ? $config['api_key'] : '';
+        $this->apiHeader = $config['api_header'] ? $config['api_header'] : 'X-API-Key:';
         $this->logger = \Boot::getLogger();
     }
 

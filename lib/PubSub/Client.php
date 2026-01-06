@@ -22,7 +22,9 @@ class Client
         $this->logger = \Boot::getLogger();
         
         $topicName = $this->config['pubsub']['default_topic'];
-        $subscriptionName = $this->config['pubsub']['topics'][$topicName]['subscription'] ?? $this->config['pubsub']['default_subscription'];
+        $subscriptionName = $this->config['pubsub']['topics'][$topicName]['subscription'] ? 
+            $this->config['pubsub']['topics'][$topicName]['subscription'] : 
+                $this->config['pubsub']['default_subscription'];
 
         $this->projectId = $this->config['google_cloud']['project_id'];
         $this->topicName = $topicName;
@@ -87,7 +89,7 @@ class Client
                 $info = [
                     'name' => $topic->name(),
                     'exists' => true,
-                    'publishConfig' => $topic->info()['publishConfig'] ?? null
+                    'publishConfig' => $topic->info()['publishConfig'] ? $topic->info()['publishConfig'] : null
                 ];
                 
                 $this->logger->info("Topic info retrieved: " . json_encode($info));
@@ -146,7 +148,7 @@ class Client
                     'name' => $subscription->name(),
                     'topic' => $subscriptionInfo['topic'],
                     'exists' => true,
-                    'messageRetentionDuration' => $subscriptionInfo['messageRetentionDuration'] ?? null
+                    'messageRetentionDuration' => $subscriptionInfo['messageRetentionDuration'] ? $subscriptionInfo['messageRetentionDuration'] : null
                 ];
                 
                 $this->logger->info("Subscription info retrieved: " . json_encode($info));

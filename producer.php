@@ -8,10 +8,10 @@ $cliParams = Boot::getCliParams();
 
 $updater = new \CKG\Updater(Boot::getDatabase(), Boot::getConfig());
 if (isset($cliParams['mode']) && $cliParams['mode'] === 'pubsub') {
-    $end = $cliParams['end'] ?? 'now';
+    $end = $cliParams['end'] ? $cliParams['end'] : 'now';
     $updater->runPubSub('last', $end);
 }else {
-    $start = $cliParams['start'] ?? date('Y-m-d H:i:s', strtotime('-1 day'));
-    $end = $cliParams['end'] ?? 'now';
+    $start = $cliParams['start'] ? $cliParams['start'] : date('Y-m-d H:i:s', strtotime('-1 day'));
+    $end = $cliParams['end'] ? $cliParams['end'] : 'now';
     $updater->runApiClient($start, $end);
 }

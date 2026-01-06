@@ -41,13 +41,6 @@ else
     curl -sS https://getcomposer.org/installer | $PHPEXEC
 fi
 
-if [ -f "composer.json" ]; then
-    echo " + composer.json found in $TARGET_DIR."
-else
-    echo "   -> [ERROR] No composer.json found in the $TARGET_DIR."
-    exit 1
-fi
-
 # Check if git is installed
 if ! command -v git &> /dev/null; then
     echo "   -> [WARNING] git is not installed. Will download repository as zip file instead."
@@ -81,6 +74,13 @@ else
     fi
     if [ "$NO_GIT" -eq 1 -a ! -d "$TARGET_DIR" ]; then
         echo "   -> [ERROR] Cannot update: Directory does not exist at $TARGET_DIR"
+        exit 1
+    fi
+
+    if [ -f "composer.json" ]; then
+        echo " + composer.json found in $TARGET_DIR."
+    else
+        echo "   -> [ERROR] No composer.json found in the $TARGET_DIR."
         exit 1
     fi
 fi

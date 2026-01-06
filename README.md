@@ -242,4 +242,4 @@ return [
 
 ## Lisensi
 
-Proyek ini dilisensikan di bawah Lisensi MIT.
+Proyek ini dilisensikan di bawah Lisensi GPL-3.0.

@@ -17,6 +17,7 @@ class Updater
     private Logger $logger;
     private Producer $producer;
     private $outgoingTable;
+    private $incomingTable;
     private LapTbc03 $laporan;
 
     public function __construct(MySQL $db, array $config) {
@@ -24,6 +25,7 @@ class Updater
         $this->config = $config;
         $this->logger = \Boot::getLogger();
         $this->outgoingTable = $this->config['ckg']['table_outgoing'] ? $this->config['ckg']['table_outgoing'] : 'ckg_pubsub_outgoing';
+        $this->incomingTable = $this->config['ckg']['table_incoming'] ? $this->config['ckg']['table_incoming'] : 'ckg_pubsub_incoming';
         $this->laporan = new LapTbc03($db, $config);
 
         // Create producer instance
@@ -85,6 +87,8 @@ class Updater
      * @return StatusPasien[]
      */
     private function fetchFromDatabase($start, $end, $limit = 0): array {
+        $this->removePubSubMessages();
+
         if (empty($start) || $start == 'last') {
             $start = $this->getLastOutgoing();
             if (empty($start))
@@ -275,4 +279,18 @@ class Updater
         return $result ?: [];
     }
 
+    private function removePubSubMessages() {
+        $incomingTable = $this->incomingTable;
+        $sqlIncoming = "DELETE FROM {$incomingTable} WHERE created_at < NOW() - INTERVAL 1 DAY";
+
+        $outgoingTable = $this->outgoingTable;
+        $sqlOutgoing = "DELETE FROM {$outgoingTable} WHERE created_at < NOW() - INTERVAL 1 DAY";
+        try {
+            $deleted1 = $this->db->query($sqlIncoming);
+            $deleted2 = $this->db->query($sqlOutgoing);
+            $this->logger->info("Removed old PubSub messages from incoming and outgoing table.");
+        } catch (\Exception $e) {
+            $this->logger->error("Failed to remove old PubSub messages: " . $e->getMessage());
+        }
+    }
 }

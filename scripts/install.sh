@@ -329,20 +329,6 @@ EOF
         else
             echo "  cd $TARGET_DIR && git pull"
         fi
-        echo ""
-        echo "You can manage the service with:"
-        echo "  Consumer Service:"
-        echo "    Start service:    sudo systemctl start ckg-consumer.service"
-        echo "    Stop service:     sudo systemctl stop ckg-consumer.service"
-        echo "    Restart service:  sudo systemctl restart ckg-consumer.service"
-        echo "    Check status:     sudo systemctl status ckg-consumer.service"
-        echo "    View logs:        sudo journalctl -u ckg-consumer.service -f"
-        echo "  Producer Services (Cronjobs):"
-        echo "    Schedule:         /etc/cron.d/ckg-producer"
-        echo "    Runs:             Daily at 2:00 AM"
-        echo "    View log:         sudo tail -f /var/log/ckg-producer.log"
-        echo "    Manually run:     sudo $TARGET_DIR/scripts/producer/ckg-producer [pubsub|api]"
-        echo ""
     else
         echo ""
         if [ "$INSTALL_MODE" = "fresh" ]; then
@@ -352,8 +338,24 @@ EOF
         fi
         echo "Consumer service status: $(systemctl is-active "$SERVICE_CONSUMER_NAME.service")"
         echo ""
-        exit 1
     fi
+
+    echo ""
+    echo " ----------------------------------------"
+    echo ""
+    echo "You can manage the service with:"
+    echo "  Consumer Service:"
+    echo "    Start service:    sudo systemctl start ckg-consumer.service"
+    echo "    Stop service:     sudo systemctl stop ckg-consumer.service"
+    echo "    Restart service:  sudo systemctl restart ckg-consumer.service"
+    echo "    Check status:     sudo systemctl status ckg-consumer.service"
+    echo "    View logs:        sudo journalctl -u ckg-consumer.service -f"
+    echo "  Producer Services (Cronjobs):"
+    echo "    Schedule:         /etc/cron.d/ckg-producer"
+    echo "    Runs:             Daily at 2:00 AM"
+    echo "    View log:         sudo tail -f /var/log/ckg-producer.log"
+    echo "    Manually run:     sudo $TARGET_DIR/scripts/producer/ckg-producer [pubsub|api]"
+    echo ""
 else
     # Install init.d consumer service
     echo " + Copying init.d consumer script to /etc/init.d/"
@@ -443,35 +445,36 @@ EOF
             echo "Consumer service has been updated and restarted"
             echo "Producer cronjobs have been updated"
         fi
-        
-        echo ""
-        echo "To update the repository in the future, run:"
-        if [ "$NO_GIT" -eq 1 ]; then
-            echo "  sudo $TARGET_DIR/scripts/install.sh update"
-        else
-            echo "  cd $TARGET_DIR && git pull"
-        fi
-        echo ""
-        echo "You can manage the services with:"
-        echo "  Consumer Service:"
-        echo "    Start service:    sudo service ckg-consumer start"
-        echo "    Stop service:     sudo service ckg-consumer stop"
-        echo "    Restart service:  sudo service ckg-consumer restart"
-        echo "    Check status:     sudo service ckg-consumer status"
-        echo "    View logs:        sudo tail -f /var/log/ckg-consumer.log"
-        echo "  Producer Services (Cronjobs):"
-        echo "    Schedule:         /etc/cron.d/ckg-producer"
-        echo "    Runs:             Daily at 2:00 AM"
-        echo "    View log:         sudo tail -f /var/log/ckg-producer.log"
-        echo "    Manually run:     sudo $TARGET_DIR/scripts/producer/ckg-producer [pubsub|api]"
-        echo ""
     else
         echo "   -> Error: Failed to install services properly"
         echo "   -> Consumer service status:"
         /etc/init.d/ckg-consumer status
         echo ""
-        exit 1
     fi
+
+    echo ""
+    echo " ----------------------------------------"
+    echo ""
+    echo "To update the repository in the future, run:"
+    if [ "$NO_GIT" -eq 1 ]; then
+        echo "  sudo $TARGET_DIR/scripts/install.sh update"
+    else
+        echo "  cd $TARGET_DIR && git pull"
+    fi
+    echo ""
+    echo "You can manage the services with:"
+    echo "  Consumer Service:"
+    echo "    Start service:    sudo service ckg-consumer start"
+    echo "    Stop service:     sudo service ckg-consumer stop"
+    echo "    Restart service:  sudo service ckg-consumer restart"
+    echo "    Check status:     sudo service ckg-consumer status"
+    echo "    View logs:        sudo tail -f /var/log/ckg-consumer.log"
+    echo "  Producer Services (Cronjobs):"
+    echo "    Schedule:         /etc/cron.d/ckg-producer"
+    echo "    Runs:             Daily at 2:00 AM"
+    echo "    View log:         sudo tail -f /var/log/ckg-producer.log"
+    echo "    Manually run:     sudo $TARGET_DIR/scripts/producer/ckg-producer [pubsub|api]"
+    echo ""
 fi
 
 if [ "$INSTALL_MODE" = "fresh" ]; then

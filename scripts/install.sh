@@ -8,7 +8,7 @@ TARGET_DIR="/opt/sitb-ckg"
 LOG_DIR="/var/log/sitb-ckg"
 SERVICE_CONSUMER_FILE="ckg-consumer.service"
 SERVICE_CONSUMER_NAME="ckg-consumer"
-
+NO_GIT=0
 INSTALL_MODE=$1
 if [ "$INSTALL_MODE" = "update" ]; then
     echo "Starting SITB-CKG update..."
@@ -50,8 +50,8 @@ fi
 
 # Check if git is installed
 if ! command -v git &> /dev/null; then
-    echo "   -> [ERROR] git is not installed. Please install git first."
-    exit 1
+    echo "   -> [WARNING] git is not installed. Will download repository as zip file instead."
+    NO_GIT=1
 fi
 
 if [ "$INSTALL_MODE" = "fresh" ]; then
@@ -74,38 +74,120 @@ if [ "$INSTALL_MODE" = "fresh" ]; then
     # Create log directory if it doesn't exist
     echo "   -> Creating log directory: $LOG_DIR"
     mkdir -p "$LOG_DIR"
-elif [ ! -d "$TARGET_DIR/.git" ]; then
-    echo "   -> [ERROR] Cannot update: Repository does not exist at $TARGET_DIR"
-    exit 1
+else
+    if [ "$NO_GIT" -eq 0 -a ! -d "$TARGET_DIR/.git" ]; then
+        echo "   -> [ERROR] Cannot update: Repository does not exist at $TARGET_DIR"
+        exit 1
+    fi
+    if [ "$NO_GIT" -eq 1 -a ! -d "$TARGET_DIR" ]; then
+        echo "   -> [ERROR] Cannot update: Directory does not exist at $TARGET_DIR"
+        exit 1
+    fi
 fi
 
-# Clone or update the repository
-if [ -d "$TARGET_DIR/.git" ]; then
-    # Repository exists, pull latest changes
-    echo " + Repository already exists at $TARGET_DIR"
-    echo " + Updating repository from $REPO_URL..."
-    cd "$TARGET_DIR"
-    git fetch origin
-    git reset --hard origin/main
-    if [ $? -ne 0 ]; then
-        echo "Error: Failed to update repository"
+if [ "$NO_GIT" -eq 1 ]; then
+    # Handle installation without git - download zip from REPO_URL and extract
+    echo " + Downloading repository as zip file..."
+    
+    # Create temp directory for download
+    TEMP_DIR=$(mktemp -d)
+    
+    # Download zip file from GitHub
+    ZIP_URL="${REPO_URL%.git}/archive/refs/heads/main.zip"
+    echo "   -> Downloading from: $ZIP_URL"
+    
+    if command -v wget &> /dev/null; then
+        wget -q -O "$TEMP_DIR/repo.zip" "$ZIP_URL"
+    elif command -v curl &> /dev/null; then
+        curl -sL -o "$TEMP_DIR/repo.zip" "$ZIP_URL"
+    else
+        echo "   -> [ERROR] Neither wget nor curl is available. Cannot download repository."
+        rm -rf "$TEMP_DIR"
         exit 1
     fi
-    echo "   -> Repository updated successfully"
+    
+    if [ $? -ne 0 ]; then
+        echo "   -> [ERROR] Failed to download repository zip file"
+        rm -rf "$TEMP_DIR"
+        exit 1
+    fi
+    
+    echo "   -> Download completed successfully"
+    
+    # Extract zip file
+    echo "   -> Extracting zip file..."
+    unzip -q "$TEMP_DIR/repo.zip" -d "$TEMP_DIR"
+    
+    if [ $? -ne 0 ]; then
+        echo "   -> [ERROR] Failed to extract zip file"
+        rm -rf "$TEMP_DIR"
+        exit 1
+    fi
+    
+    # Find the extracted directory
+    EXTRACTED_DIR=$(find "$TEMP_DIR" -maxdepth 1 -type d -name "sitb-pub-sub-*" | head -n 1)
+    
+    if [ -z "$EXTRACTED_DIR" ]; then
+        echo "   -> [ERROR] Could not find extracted repository directory"
+        rm -rf "$TEMP_DIR"
+        exit 1
+    fi
+    
+    echo "   -> Extraction completed successfully"
+    
+    # Copy/overwrite contents to TARGET_DIR
+    echo "   -> Copying files to $TARGET_DIR..."
+    
+    if [ "$INSTALL_MODE" = "fresh" ]; then
+        # For fresh install, create directory if it doesn't exist
+        if [ ! -d "$TARGET_DIR" ]; then
+            mkdir -p "$TARGET_DIR"
+        fi
+    fi
+    
+    # Copy all files from extracted directory to TARGET_DIR, overwriting existing files
+    cp -rf "$EXTRACTED_DIR"/* "$TARGET_DIR/"
+    
+    if [ $? -ne 0 ]; then
+        echo "   -> [ERROR] Failed to copy files to $TARGET_DIR"
+        rm -rf "$TEMP_DIR"
+        exit 1
+    fi
+    
+    echo "   -> Files copied successfully"
+    
+    # Clean up temp directory
+    rm -rf "$TEMP_DIR"
+    echo "   -> Temporary files cleaned up"
 else
-    # Repository doesn't exist, clone it
-    echo " + Cloning repository from $REPO_URL to $TARGET_DIR..."
-    if [ -d "$TARGET_DIR" ]; then
-        echo "   -> Directory $TARGET_DIR exists but is not a git repository"
-        echo "   -> Please remove it or move it before running this script"
-        exit 1
+    # Clone or update the repository
+    if [ -d "$TARGET_DIR/.git" ]; then
+        # Repository exists, pull latest changes
+        echo " + Repository already exists at $TARGET_DIR"
+        echo " + Updating repository from $REPO_URL..."
+        cd "$TARGET_DIR"
+        git fetch origin
+        git reset --hard origin/main
+        if [ $? -ne 0 ]; then
+            echo "Error: Failed to update repository"
+            exit 1
+        fi
+        echo "   -> Repository updated successfully"
+    else
+        # Repository doesn't exist, clone it
+        echo " + Cloning repository from $REPO_URL to $TARGET_DIR..."
+        if [ -d "$TARGET_DIR" ]; then
+            echo "   -> Directory $TARGET_DIR exists but is not a git repository"
+            echo "   -> Please remove it or move it before running this script"
+            exit 1
+        fi
+        git clone "$REPO_URL" "$TARGET_DIR"
+        if [ $? -ne 0 ]; then
+            echo "   -> Error: Failed to clone repository"
+            exit 1
+        fi
+        echo "   -> Repository cloned successfully"
     fi
-    git clone "$REPO_URL" "$TARGET_DIR"
-    if [ $? -ne 0 ]; then
-        echo "   -> Error: Failed to clone repository"
-        exit 1
-    fi
-    echo "   -> Repository cloned successfully"
 fi
 
 # Set proper permissions
@@ -244,7 +326,11 @@ EOF
 
         echo ""
         echo "To update the repository in the future, run:"
-        echo "  cd $TARGET_DIR && git pull"
+        if [ "$NO_GIT" -eq 1 ]; then
+            echo "  sudo $TARGET_DIR/scripts/install.sh update"
+        else
+            echo "  cd $TARGET_DIR && git pull"
+        fi
         echo ""
         echo "You can manage the service with:"
         echo "  Consumer Service:"
@@ -357,7 +443,11 @@ EOF
         
         echo ""
         echo "To update the repository in the future, run:"
-        echo "  cd $TARGET_DIR && git pull"
+        if [ "$NO_GIT" -eq 1 ]; then
+            echo "  sudo $TARGET_DIR/scripts/install.sh update"
+        else
+            echo "  cd $TARGET_DIR && git pull"
+        fi
         echo ""
         echo "You can manage the services with:"
         echo "  Consumer Service:"

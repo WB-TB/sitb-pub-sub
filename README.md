@@ -16,42 +16,79 @@ Ini adalah implementasi PHP untuk mengintegrasikan data SIBT dengan Google Cloud
 - **Logging Komprehensif**: Logging detail untuk debugging dan monitoring
 - **Layanan Systemd**: Manajemen layanan otomatis dengan timer
 
-## Instalasi
+## Instalasi CKG Service di SITB Server
 
-### Instalasi Cepat
+### 1. Install menggunakan script
 
 Gunakan skrip instalasi satu baris:
 
 ```bash
-curl -sS https://raw.githubusercontent.com/WB-TB/sitb-pub-sub/main/scripts/install.sh | sudo bash
+curl -sS https://raw.githubusercontent.com/WB-TB/sitb-pub-sub/main/scripts/install.sh | sudo sh
 ```
 
 Skrip ini akan:
 - Mengunduh dan mengekstrak repositori ke `/opt/sitb-ckg`
 - Menginstal dependensi Composer
 - Membuat pengguna dan grup `sitb-ckg`
-- Menyiapkan layanan systemd untuk consumer, producer-pubsub, dan producer-api
+- Menyiapkan layanan systemd atau initd untuk consumer, serta cronjob producer (baik mode `pubsub` atau `api`)
 - Mengonfigurasi izin file dan kepemilikan yang tepat
 
-### Instalasi Manual
+### 2. Siapkan Kredensial Google Cloud
+- Minta file `credentials.json` ke administrator SATUSEHAT-PKG
+- Unduh file JSON kredensial
+- Letakkan file di `/opt/sitb-ckg/credentials.json`
 
-1. Instal dependensi:
-```bash
-composer update
+### 3. Siapkan database untuk penyimpanan sementara pesan Pub/Sub
+#### 3.1 Menerima Pesan masuk dari Pub/Sub (sebagai Consumer)
+Dibutuhkan 2 tabel sementara untuk memastikan pesan yang masuk tidak diproses berkali-kali. 
+
+> Pesan di dalam tabel akan di **hapus setiap hari** (menggunakan CronJob/Scheduller bawaan dari service ini) untuk mencegah penumpukan yang tidak diperlukan
+
+**Buat Tabel `ckg_pubsub_incoming`**
+```sql
+CREATE TABLE `ckg_pubsub_incoming` (
+  `id` varchar(100) NOT NULL COMMENT 'Message ID from Pub/Sub',
+  `data` TEXT NOT NULL COMMENT 'Message data in JSON format',
+  `received_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Message received timestamp',
+  `processed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Message received timestamp',
+  PRIMARY KEY (`id`),
+  KEY `idx_received_at` (`received_at`),
+  KEY `idx_processed_at` (`processed_at`)
+) ENGINE=InnoDB COMMENT='Pub/Sub Incoming Messages Table';
 ```
 
-2. Siapkan kredensial Google Cloud:
-   - Buat akun layanan di Google Cloud Console
-   - Unduh file JSON kredensial
-   - Letakkan di direktori proyek sebagai `credentials.json`
+**Buat Tabel `ckg_pubsub_processed`**
+```sql
+CREATE TABLE `ckg_pubsub_outgoing` (
+  `terduga_id` varchar(100) NOT NULL COMMENT 'Message ID from Pub/Sub',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Record create timestamp',
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Record update timestamp',
+  PRIMARY KEY (`id`),
+  KEY `idx_created_at` (`created_at`),
+  KEY `idx_updated_at` (`updated_at`)
+) ENGINE=InnoDB COMMENT='API Outgoing Messages Table';
+```
 
-## Konfigurasi
+> Anda juga bisa menggunakan file **[sql/pubsub_temp.sql](./sql/pubsub_temp.sql)** untuk dieksekusi di Database Server
+
+#### 3.2 Mengupdae Table Skrining SITB
+Menambahkan field `ckg_id` di tabel `ta_skrining` SITB
+
+```sql
+-- Add ckg_id column to ta_skrining table
+ALTER TABLE ta_skrining ADD COLUMN ckg_id varchar(16) DEFAULT NULL;
+```
+
+> Silakan gunakan file **[sql/ta_skrining_update.sql](./sql/ta_skrining_update.sql)** untuk dieksekusi di Database Server
+
+### 4. Update file Konfigurasi
 
 Edit file `/opt/sitb-ckg/config.php`:
 
 ```php
 return [
     'environment' => getenv('APP_ENV') ?: 'development',
+    'producer_mode' => 'api', // 'pubsub' or 'api'
     'google_cloud' => [
         'project_id' => 'your-project-id',
         'credentials_path' => __DIR__ . '/credentials.json',
@@ -118,64 +155,18 @@ return [
     ]
 ];
 ```
+Pastikan parameter berikut di-set dengan benar:
+- google_cloud.project_id
+- pubsub.default_subscription
+- pubsub.default_topic
+- api.base_url
+- api.api_key
+- Database connection settings
 
-## Manajemen Layanan
-
-Setelah instalasi dan konfigurasi, Anda dapat mengelola layanan menggunakan systemd:
-
-### Layanan Consumer
-
+### 5. Restart Linux Service (Pub/Sub Consumer)
+Setelah anda melakukan langkah 1-4 kemudian restart linux service untuk mulai menerima data Pub/Sub Skrining CKG dengan masuk ke terminal server SITB dan jalankan perintah berikut:
 ```bash
-# Mulai layanan
-sudo systemctl start ckg-consumer.service
-
-# Hentikan layanan
-sudo systemctl stop ckg-consumer.service
-
-# Mulai ulang layanan
-sudo systemctl restart ckg-consumer.service
-
-# Periksa status
-sudo systemctl status ckg-consumer.service
-
-# Lihat log
-sudo journalctl -u ckg-consumer.service -f
-```
-
-### Layanan Producer Pub/Sub
-
-Layanan ini berjalan sebagai timer yang memicu producer dalam mode Pub/Sub pada interval yang dijadwalkan.
-
-```bash
-# Periksa status timer
-sudo systemctl status ckg-producer-pubsub.timer
-
-# Mulai timer
-sudo systemctl start ckg-producer-pubsub.timer
-
-# Hentikan timer
-sudo systemctl stop ckg-producer-pubsub.timer
-
-# Lihat log
-sudo journalctl -u ckg-producer-pubsub.timer -f
-```
-
-### Layanan Producer API
-
-Layanan ini berjalan sebagai timer yang memicu producer dalam mode API pada interval yang dijadwalkan.
-
-```bash
-# Periksa status timer
-sudo systemctl status ckg-producer-api.timer
-
-# Mulai timer
-sudo systemctl start ckg-producer-api.timer
-
-# Hentikan timer
-sudo systemctl stop ckg-producer-api.timer
-
-# Lihat log
-sudo journalctl -u ckg-producer-api.timer -f
+sudo service ckg-consumer restart
 ```
 
 ## Penggunaan CLI
@@ -218,8 +209,7 @@ Semua operasi dicatat ke systemd journal dengan tingkat log yang dapat dikonfigu
 ### Lokasi Log
 
 - **Layanan Consumer**: `/var/log/sitb-ckg/consumer.log`
-- **Layanan Producer Pub/Sub**: `/var/log/sitb-ckg/producer-pubsub.log`
-- **Layanan Producer API**: `/var/log/sitb-ckg/producer-api.log`
+- **Layanan Producer (API dan Pub/Sub)**: `/var/log/sitb-ckg/producer.log`
 
 Lihat log menggunakan:
 ```bash
@@ -241,36 +231,26 @@ Jalankan rangkaian tes:
 composer test
 ```
 
-### Tes Unit
 
-Proyek ini mencakup tes unit untuk semua komponen utama:
+## Konfigurasi Tambahan
+### 1. Mengirim Data ke CKG (melalui API atau Pub/Sub sesuai konfigurasi)
+Untuk pengiriman data dari SITB ke server CKG menggunakan **Laporan TBC 03 (SO dan RO)** dan tidak membutuhkan perubahan skema database.
 
-- **Tes Producer**: Tes penerbitan pesan, pemrosesan batch, dan kompresi
-- **Tes Consumer**: Konsumsi pesan, acknowledgment, dan pengendalian alur
-- **Tes Client**: Fungsionalitas dasar dan integrasi Google Cloud
+Pengiriman dapat dilakukan melalui channel `Google Pub/Sub` atau `API`. Pilihan default jika tidak ada perubahan config adalah **`API`**.
 
-Untuk menjalankan rangkaian tes tertentu:
-
-```bash
-# Jalankan tes producer
-./vendor/bin/phpunit tests/ProducerTest.php
-
-# Jalankan tes consumer
-./vendor/bin/phpunit tests/ConsumerTest.php
-
-# Jalankan tes client
-./vendor/bin/phpunit tests/ClientTest.php
-```
-
-### Tes Mock
-
-Untuk pengujian tanpa layanan Google Cloud yang sebenarnya, proyek ini mencakup implementasi mock:
-
+> Data akan dijalankan menggunakan CronJob (Scheduller) setiap hari pada pukul 02.00 (dini hari) untuk mengirim data pada hari sebelumnya secara bertahap (dalam batch berukuran 100 data per batch). Ukuran batch pengiriman bisa diubah pada `/opt/sitb-ckg/config.php` pada parameter `$config['producer']['batch_size']`
 ```php
-// Gunakan client mock untuk pengujian
-$mockClient = new MockPubSubClient();
-$producer = new \PubSub\Producer($config, $mockClient);
+return [
+    // ...
+    'producer' => [
+        // ...
+        'batch_size' => 100, // <-- UBAH DISINI
+        // ...
+    ],
+    // ...
+]
 ```
+
 
 ## Lisensi
 

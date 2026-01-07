@@ -29,20 +29,20 @@ abstract class DbObject {
      * @param string|null $value
      * @return int|null
      */
-    protected function convertYaTidak(?string $value, ?string $default = null): ?string
+    protected function convertYaTidak($value, $default = null): ?string
     {
-        if ($value === 'Ya') {
+        if ($value === 'Ya' || $value === '1' || intval($value) === 1) {
             return '1';
-        } elseif ($value === 'Tidak') {
+        } elseif ($value === 'Tidak' || $value === '0' || intval($value) === 0) {
             return '0';
-        } elseif ($value === 'Tidak Diketahui') {
+        } elseif ($value === 'Tidak Diketahui' || $value === '2' || intval($value) === 2) {
             return '2';
         }
         
         return isset($default) ? $this->convertYaTidak($default) : null;
     }
 
-    protected function convertTindakLanjut(?string $value, ?string $default = null): ?string {
+    protected function convertTindakLanjut($value, $default = null): ?string {
         if ($value === 'Belum Ada') {
             return '0';
         } elseif ($value === 'Dirujuk Untuk Pemeriksaan TB') {

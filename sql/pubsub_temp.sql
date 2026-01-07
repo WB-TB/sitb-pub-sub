@@ -3,6 +3,7 @@
 CREATE TABLE `ckg_pubsub_incoming` (
   `id` varchar(100) NOT NULL COMMENT 'Message ID from Pub/Sub',
   `data` TEXT NOT NULL COMMENT 'Message data in JSON format',
+  `attributes` TEXT NOT NULL COMMENT 'Message attributes in JSON format',
   `received_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Message received timestamp',
   `processed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Message received timestamp',
   PRIMARY KEY (`id`),

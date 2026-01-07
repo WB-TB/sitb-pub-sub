@@ -334,25 +334,18 @@ sudo chmod 755 /var/log/sitb-ckg
 - [`table_skrining`](../config.php:66): Tabel skrining **(HARUS DIUPDATE sesuai database)**
 - [`table_laporan_so`](../config.php:67): Tabel laporan SO **(HARUS DIUPDATE sesuai database)**
 - [`table_laporan_ro`](../config.php:68): Tabel laporan RO **(HARUS DIUPDATE sesuai database)**
-- [`table_incoming`](../config.php:69): Tabel untuk menyimpan pesan masuk
-- [`table_outgoing`](../config.php:70): Tabel untuk menyimpan pesan keluar
-- [`marker_field`](../config.php:71): Field marker untuk identifikasi
-- [`marker_produce`](../config.php:72): Nilai marker untuk producer
-- [`marker_consume`](../config.php:73): Nilai marker untuk consumer
+- [`table_incoming`](../config.php:69): Tabel untuk menyimpan pesan masuk dari PubSub
+- [`table_outgoing`](../config.php:70): Tabel untuk menyimpan pesan keluar ke PubSub
+- [`marker_field`](../config.php:71): Field marker untuk identifikasi pesan yang dianggap valid berasal dari PubSub (hanya mempedulikan pesan yang mengandung field dengan nama sesuai dengan `marker_field`)
+- [`marker_produce`](../config.php:72): Nilai penanda untuk producer ketika mengirim data ke PubSub akan menyertakan field dengan nama `marker_field` dan berisi nilai `marker_produce`. Ini mencegah agar pesan yang dikirim tidak diproses oleh Consumer sendiri.
+- [`marker_consume`](../config.php:73): Nilai pendanda untuk consumer ketika menerjemahkan pesan yang data dari PubSub dengan melihat apakah ada field dengan nama `marker_field` dan berisi nilai sesuai `marker_consume`. Ini mencegah agar pesan yang diproses dipastikan bukan berasal dari diri sendiri.
 
 **Pengaruh pada Kode:**
 - Digunakan di [`lib/CKG/Receiver.php`](../lib/CKG/Receiver.php) untuk proses konsumsi pesan
 - Digunakan di [`lib/CKG/Updater.php`](../lib/CKG/Updater.php) untuk proses produksi pesan
-- Mengidentifikasi tabel yang akan di-query
+- Mengidentifikasi pesan pubsub yang dikirim dan diterjemahkan berbeda.
 
-**Cara Update:**
-1. Periksa struktur database menggunakan perintah SQL:
-   ```sql
-   SHOW TABLES;
-   DESCRIBE ta_skrining;
-   ```
-2. Sesuaikan nama tabel sesuai dengan database yang ada
-3. Pastikan field marker ada di tabel yang sesuai
+> **CATATAN MARKER FIELD**: Tidak boleh mengubah nilai `marker_field`, `marker_produce` dan `marker_consume` tanpa berkoordinasi dengan pengembang sistem yang berinteraksi dengan sistem ini. Harus dipastikan ketiga variabel ini sesuai dan berpasangan dengan sistem CKG yang terhubung.
 
 ---
 

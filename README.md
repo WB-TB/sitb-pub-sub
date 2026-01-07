@@ -83,91 +83,31 @@ ALTER TABLE ta_skrining ADD COLUMN ckg_id varchar(16) DEFAULT NULL;
 
 ### 4. Update file Konfigurasi
 
-Edit file `/opt/sitb-ckg/config.php`:
+Untuk dokumentasi lengkap mengenai konfigurasi, silakan lihat file [`docs/CONFIG.md`](./docs/CONFIG.md).
 
-```php
-return [
-    'environment' => getenv('APP_ENV') ?: 'development',
-    'producer_mode' => 'api', // 'pubsub' or 'api'
-    'google_cloud' => [
-        'project_id' => 'your-project-id',                          // <-- BUTUH DIUPDATE
-        'credentials_path' => __DIR__ . '/credentials.json',
-        'debug' => getenv('GOOGLE_SDK_PHP_LOGGING') === 'true' ? true : false,
-    ],
-    'pubsub' => [
-        'default_topic' => 'test-topic',                            // <-- BUTUH DIUPDATE
-        'default_subscription' => 'test-subscription',              // <-- BUTUH DIUPDATE
-        'topics' => [
-            'test-topic' => [
-                'subscription' => 'test-subscription',
-                'message_ordering' => false
-            ]
-        ]
-    ],
-    'consumer' => [
-        'max_messages_per_pull' => 10,
-        'sleep_time_between_pulls' => 5,
-        'acknowledge_timeout' => 60,
-        'retry_count' => 3,
-        'retry_delay' => 1,
-        'flow_control' => [
-            'enabled' => false,
-            'max_outstanding_messages' => 1000,
-            'max_outstanding_bytes' => 1000000 // 1MB
-        ]
-    ],
-    'producer' => [
-        'enable_message_ordering' => false,
-        'batch_size' => 100,
-        'message_attributes' => [
-            'source' => 'php-pubsub-client',
-            'version' => '1.0.0',
-            'environment' => 'development'
-        ],
-        'compression' => [
-            'enabled' => false,
-            'algorithm' => 'gzip'
-        ]
-    ],
-    'api' => [
-        'base_url' => 'https://api-dev.dto.kemkes.go.id/fhir-sirs', // <-- BUTUH DIUPDATE
-        'timeout' => 60, // seconds
-        'api_key' => getenv('SITB_API_KEY') ?: 'your_api_key_here', // <-- BUTUH DIUPDATE
-        'api_header' => 'X-API-Key:',
-        'batch_size' => 100
-    ],
-    'database' => [
-        'host' => 'mysql_service',                                  // <-- BUTUH DIUPDATE
-        'port' => 3306,                                             // <-- BUTUH DIUPDATE
-        'username' => 'xtb',                                        // <-- BUTUH DIUPDATE
-        'password' => 'xtb',                                        // <-- BUTUH DIUPDATE
-        'database_name' => 'xtb'                                    // <-- BUTUH DIUPDATE
-    ],
-    'logging' => [
-        'level' => 'DEBUG', // DEBUG, INFO, WARNING, ERROR
-        'consumer' => '/var/log/sitb-ckg/consumer.log',
-        'producer-pubsub' => '/var/log/sitb-ckg/producer-pubsub.log',
-        'producer-api' => '/var/log/sitb-ckg/producer-api.log',
-    ],
-    'ckg' => [
-        'table_skrining' => 'ta_skrining',
-        'table_laporan_so' => 'lap_tbc_03so',                        // <-- BUTUH DIUPDATE nama tabel laporan SO
-        'table_laporan_ro' => 'lap_tbc_03ro',                        // <-- BUTUH DIUPDATE nama tabel laporan RO
-        'table_incoming' => 'ckg_pubsub_incoming',
-        'table_outgoing' => 'ckg_pubsub_outgoing',
-        'marker_field' => 'transactionSource',
-        'marker_produce' => 'STATUS-PASIEN-TB',
-		'marker_consume' => 'SKRINING-CKG-TB',
-    ]
-];
-```
-Pastikan parameter berikut di-set dengan benar:
-- google_cloud.project_id
-- pubsub.default_subscription
-- pubsub.default_topic
-- api.base_url
-- api.api_key
-- Database connection settings
+Dokumentasi tersebut mencakup:
+- Penjelasan detail setiap bagian konfigurasi
+- Panduan perubahan konfigurasi untuk setiap environment
+- Contoh konfigurasi untuk development, staging, dan production
+- Troubleshooting masalah konfigurasi
+- Best practices untuk keamanan dan manajemen environment
+
+**Parameter yang wajib di-update:**
+- [`google_cloud.project_id`](./config.php:7) - ID proyek Google Cloud
+- [`pubsub.default_topic`](./config.php:12) - Topic Google Cloud PubSub
+- [`pubsub.default_subscription`](./config.php:13) - Subscription Google Cloud PubSub
+- [`api.base_url`](./config.php:46) - URL API eksternal
+- [`api.api_key`](./config.php:48) - API key untuk autentikasi
+- [`database.host`](./config.php:53) - Hostname database
+- [`database.port`](./config.php:54) - Port database
+- [`database.username`](./config.php:55) - Username database
+- [`database.password`](./config.php:56) - Password database
+- [`database.database_name`](./config.php:57) - Nama database
+- [`ckg.table_skrining`](./config.php:66) - Nama tabel skrining
+- [`ckg.table_laporan_so`](./config.php:67) - Nama tabel laporan SO
+- [`ckg.table_laporan_ro`](./config.php:68) - Nama tabel laporan RO
+
+Edit file `/opt/sitb-ckg/config.php` sesuai dengan environment yang digunakan.
 
 ### 5. Restart Linux Service (Pub/Sub Consumer)
 Setelah anda melakukan langkah 1-4 kemudian restart linux service untuk mulai menerima data Pub/Sub Skrining CKG dengan masuk ke terminal server SITB dan jalankan perintah berikut:

@@ -1,12 +1,12 @@
 <?php
 
 return [
-    'environment' => getenv('APP_ENV') ? getenv('APP_ENV') : 'development',
+    'environment' => 'development',
     'producer_mode' => 'api', // 'pubsub' or 'api'
     'google_cloud' => [
-        'project_id' => getenv('GOOGLE_CLOUD_PROJECT') ? getenv('GOOGLE_CLOUD_PROJECT') : 'ckg-tb-staging', // <-- BUTUH DIUPDATE
-        'credentials_path' => getenv('GOOGLE_APPLICATION_CREDENTIALS') ? getenv('GOOGLE_APPLICATION_CREDENTIALS') : __DIR__ . '/credentials.json',
-        'debug' => getenv('GOOGLE_SDK_PHP_LOGGING') === 'true' ? true : false,
+        'project_id' => 'ckg-tb-staging',                                       // <-- BUTUH DIUPDATE
+        'credentials_path' => __DIR__ . '/credentials.json',
+        'debug' => false,
     ],
     'pubsub' => [
         'default_topic' => 'projects/ckg-tb-staging/topics/CKG-SITB',            // <-- BUTUH DIUPDATE
@@ -45,7 +45,7 @@ return [
     'api' => [
         'base_url' => 'https://api-dev.dto.kemkes.go.id/fhir-sirs', // <-- BUTUH DIUPDATE
         'timeout' => 60, // seconds
-        'api_key' => getenv('SITB_API_KEY') ?: 'your_api_key_here', // <-- BUTUH DIUPDATE
+        'api_key' => 'your_api_key_here', // <-- BUTUH DIUPDATE
         'api_header' => 'X-API-Key:',
         'batch_size' => 100
     ],

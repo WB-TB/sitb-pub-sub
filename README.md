@@ -3,11 +3,11 @@ Integrasi data ASIK CKG dari aplikasi SITB melalui Google Pub/Sub dan Restful AP
 
 ## Ringkasan
 
-Ini adalah implementasi PHP untuk mengintegrasikan data SIBT dengan Google Cloud Pub/Sub. Implementasi ini mencakup:
+Ini adalah implementasi PHP untuk mengintegrasikan data SITB dengan Google Cloud Pub/Sub. Implementasi ini mencakup:
 
-- **Producer**: Mengirim pesan ke CKG Server bersisi status perawatan TB pasien melalui topik Google Pub/Sub atau API sesuai pilihan konfigurasi
-- **Consumer**: Secara aktif menerima pesan dari Google Pub/Sub berisi data Skrining CKG untuk pasien **Terduga TB**
-- **Client**: Kelas dasar dengan fungsionalitas umum untuk producer dan consumer
+- **Producer**: Mengirim pesan ke CKG Server bersisi status perawatan TB pasien melalui **Google Pub/Sub** atau **Restful API** sesuai pilihan konfigurasi
+- **Consumer**: Secara aktif menerima pesan dari **Google Pub/Sub** berisi data Skrining CKG untuk pasien **Terduga TB**
+- **Client**: Fungsionalitas dasar untuk memformat, mengirim dan menerima data
 
 ## Fitur
 
@@ -29,9 +29,9 @@ curl -sS https://raw.githubusercontent.com/WB-TB/sitb-pub-sub/main/scripts/insta
 Skrip ini akan:
 - Mengunduh dan mengekstrak repositori ke `/opt/sitb-ckg`
 - Menginstal dependensi Composer
-- Membuat pengguna dan grup `sitb-ckg`
+- Membuat pengguna dan grup `sitb-ckg` untuk `background process`
 - Menyiapkan layanan systemd atau initd untuk consumer, serta cronjob producer (baik mode `pubsub` atau `api`)
-- Mengonfigurasi izin file dan kepemilikan yang tepat
+- Mengonfigurasi permission sesuai kebutuhan `background process`
 
 ### 2. Siapkan Kredensial Google Cloud
 - Minta file `credentials.json` ke administrator SATUSEHAT-PKG
@@ -44,7 +44,7 @@ Dibutuhkan 2 tabel sementara untuk memastikan pesan yang masuk tidak diproses be
 
 > Pesan di dalam tabel akan di **hapus setiap hari** (menggunakan CronJob/Scheduller bawaan dari service ini) untuk mencegah penumpukan yang tidak diperlukan
 
-**Buat Tabel `ckg_pubsub_incoming`**
+**A. Buat Tabel `ckg_pubsub_incoming`**
 ```sql
 CREATE TABLE `ckg_pubsub_incoming` (
   `id` varchar(100) NOT NULL COMMENT 'Message ID from Pub/Sub',
@@ -57,7 +57,7 @@ CREATE TABLE `ckg_pubsub_incoming` (
 ) ENGINE=InnoDB COMMENT='Pub/Sub Incoming Messages Table';
 ```
 
-**Buat Tabel `ckg_pubsub_outgoing`**
+**B. Buat Tabel `ckg_pubsub_outgoing`**
 ```sql
 CREATE TABLE `ckg_pubsub_outgoing` (
   `terduga_id` varchar(100) NOT NULL COMMENT 'Message ID from Pub/Sub',
@@ -71,7 +71,7 @@ CREATE TABLE `ckg_pubsub_outgoing` (
 
 > Anda juga bisa menggunakan file **[sql/pubsub_temp.sql](./sql/pubsub_temp.sql)** untuk dieksekusi di Database Server
 
-#### 3.2 Mengupdae Table Skrining SITB
+#### 3.2 Mengupdate Table Skrining SITB
 Menambahkan field `ckg_id` di tabel `ta_skrining` SITB
 
 ```sql
@@ -90,13 +90,13 @@ return [
     'environment' => getenv('APP_ENV') ?: 'development',
     'producer_mode' => 'api', // 'pubsub' or 'api'
     'google_cloud' => [
-        'project_id' => 'your-project-id',
+        'project_id' => 'your-project-id',                          // <-- BUTUH DIUPDATE
         'credentials_path' => __DIR__ . '/credentials.json',
         'debug' => getenv('GOOGLE_SDK_PHP_LOGGING') === 'true' ? true : false,
     ],
     'pubsub' => [
-        'default_topic' => 'test-topic',
-        'default_subscription' => 'test-subscription',
+        'default_topic' => 'test-topic',                            // <-- BUTUH DIUPDATE
+        'default_subscription' => 'test-subscription',              // <-- BUTUH DIUPDATE
         'topics' => [
             'test-topic' => [
                 'subscription' => 'test-subscription',
@@ -130,11 +130,18 @@ return [
         ]
     ],
     'api' => [
-        'base_url' => 'https://api-dev.dto.kemkes.go.id/fhir-sirs',
+        'base_url' => 'https://api-dev.dto.kemkes.go.id/fhir-sirs', // <-- BUTUH DIUPDATE
         'timeout' => 60, // seconds
-        'api_key' => getenv('SITB_API_KEY') ?: 'your_api_key_here',
+        'api_key' => getenv('SITB_API_KEY') ?: 'your_api_key_here', // <-- BUTUH DIUPDATE
         'api_header' => 'X-API-Key:',
         'batch_size' => 100
+    ],
+    'database' => [
+        'host' => 'mysql_service',                                  // <-- BUTUH DIUPDATE
+        'port' => 3306,                                             // <-- BUTUH DIUPDATE
+        'username' => 'xtb',                                        // <-- BUTUH DIUPDATE
+        'password' => 'xtb',                                        // <-- BUTUH DIUPDATE
+        'database_name' => 'xtb'                                    // <-- BUTUH DIUPDATE
     ],
     'logging' => [
         'level' => 'DEBUG', // DEBUG, INFO, WARNING, ERROR
@@ -144,11 +151,10 @@ return [
     ],
     'ckg' => [
         'table_skrining' => 'ta_skrining',
-        'table_laporan_so' => 'lap_tbc_03so',
-        'table_laporan_ro' => 'lap_tbc_03ro',
-        'table_incoming' => 'tmp_ckg_incoming',
-        'table_outgoing' => 'tmp_ckg_outgoing',
-        'table_processed' => 'tmp_ckg_processed',
+        'table_laporan_so' => 'lap_tbc_03so',                        // <-- BUTUH DIUPDATE nama tabel laporan SO
+        'table_laporan_ro' => 'lap_tbc_03ro',                        // <-- BUTUH DIUPDATE nama tabel laporan RO
+        'table_incoming' => 'ckg_pubsub_incoming',
+        'table_outgoing' => 'ckg_pubsub_outgoing',
         'marker_field' => 'transactionSource',
         'marker_produce' => 'STATUS-PASIEN-TB',
 		'marker_consume' => 'SKRINING-CKG-TB',

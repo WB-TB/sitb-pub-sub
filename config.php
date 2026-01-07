@@ -4,16 +4,16 @@ return [
     'environment' => getenv('APP_ENV') ? getenv('APP_ENV') : 'development',
     'producer_mode' => 'api', // 'pubsub' or 'api'
     'google_cloud' => [
-        'project_id' => getenv('GOOGLE_CLOUD_PROJECT') ? getenv('GOOGLE_CLOUD_PROJECT') : 'ckg-tb-staging',
+        'project_id' => getenv('GOOGLE_CLOUD_PROJECT') ? getenv('GOOGLE_CLOUD_PROJECT') : 'ckg-tb-staging', // <-- BUTUH DIUPDATE
         'credentials_path' => getenv('GOOGLE_APPLICATION_CREDENTIALS') ? getenv('GOOGLE_APPLICATION_CREDENTIALS') : __DIR__ . '/credentials.json',
         'debug' => getenv('GOOGLE_SDK_PHP_LOGGING') === 'true' ? true : false,
     ],
     'pubsub' => [
-        'default_topic' => 'projects/ckg-tb-staging/topics/CKG-SITB',
-        'default_subscription' => 'projects/ckg-tb-staging/subscriptions/CKG-SITB-sub2',
+        'default_topic' => 'projects/ckg-tb-staging/topics/CKG-SITB',            // <-- BUTUH DIUPDATE
+        'default_subscription' => 'projects/ckg-tb-staging/subscriptions/Dev',   // <-- BUTUH DIUPDATE
         'topics' => [
             'projects/ckg-tb-staging/topics/CKG-SITB' => [
-                'subscription' => 'projects/ckg-tb-staging/subscriptions/CKG-SITB-sub2',
+                'subscription' => 'projects/ckg-tb-staging/subscriptions/Dev',
                 'message_ordering' => false
             ],
         ]
@@ -43,18 +43,18 @@ return [
         ]
     ],
     'api' => [
-        'base_url' => 'https://api-dev.dto.kemkes.go.id/fhir-sirs',
+        'base_url' => 'https://api-dev.dto.kemkes.go.id/fhir-sirs', // <-- BUTUH DIUPDATE
         'timeout' => 60, // seconds
-        'api_key' => getenv('SITB_API_KEY') ?: 'your_api_key_here',
+        'api_key' => getenv('SITB_API_KEY') ?: 'your_api_key_here', // <-- BUTUH DIUPDATE
         'api_header' => 'X-API-Key:',
         'batch_size' => 100
     ],
     'database' => [
-        'host' => 'mysql_service',
-        'port' => 3306,
-        'username' => 'xtb',
-        'password' => 'xtb',
-        'database_name' => 'xtb'
+        'host' => 'mysql_service',                                  // <-- BUTUH DIUPDATE
+        'port' => 3306,                                             // <-- BUTUH DIUPDATE
+        'username' => 'xtb',                                        // <-- BUTUH DIUPDATE
+        'password' => 'xtb',                                        // <-- BUTUH DIUPDATE
+        'database_name' => 'xtb'                                    // <-- BUTUH DIUPDATE
     ],
     'logging' => [
         'level' => 'DEBUG', // DEBUG, INFO, WARNING, ERROR
@@ -63,12 +63,11 @@ return [
         'producer-api' => '/var/log/sitb-ckg/producer-api.log',
     ],
     'ckg' => [
-        'table_skrining' => 'ta_skrining',
-        'table_laporan_so' => 'lap_tbc_03so',
-        'table_laporan_ro' => 'lap_tbc_03ro',
-        'table_incoming' => 'tmp_ckg_incoming',
-        'table_outgoing' => 'tmp_ckg_outgoing',
-        'table_processed' => 'tmp_ckg_processed',
+        'table_skrining' => 'ta_skrining',                         // <-- BUTUH DIUPDATE
+        'table_laporan_so' => 'lap_tbc_03so',                      // <-- BUTUH DIUPDATE nama tabel laporan SO
+        'table_laporan_ro' => 'lap_tbc_03ro',                      // <-- BUTUH DIUPDATE nama tabel laporan RO
+        'table_incoming' => 'ckg_pubsub_incoming',
+        'table_outgoing' => 'ckg_pubsub_outgoing',
         'marker_field' => 'transactionSource',
         'marker_produce' => 'STATUS-PASIEN-TB',
 		'marker_consume' => 'SKRINING-CKG-TB',

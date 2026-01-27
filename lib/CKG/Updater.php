@@ -86,8 +86,9 @@ class Updater
      * 
      * @return StatusPasien[]
      */
-    private function fetchFromDatabase($start, $end, $limit = 0): array {
-        $this->removePubSubMessages();
+    private function fetchFromDatabase($start, $end, $mode = 'api', $limit = 0): array {
+        if ($mode == 'pubsub')
+            $this->removePubSubMessages();
 
         if (empty($start) || $start == 'last') {
             $start = $this->getLastOutgoing();
@@ -107,13 +108,13 @@ class Updater
 
         // Proses SO
         $statusSo = $this->laporan->getData(LapTbc03::TYPE_SO, $start, $end, false, $limit);
-        print_r($statusSo);
         foreach ($statusSo as $item) {
             $item['diagnosis'] = 'TBC SO';
             $statusPasien = new StatusPasien();
             $statusPasien->fromDbRecord($item);
             $status[] = $statusPasien;
         }
+        $this->logger->debug("Sending TB SO " . count($status) . " items");
 
         // Proses RO
         $statusRo = $this->laporan->getData(LapTbc03::TYPE_RO, $start, $end, false, $limit);
@@ -123,6 +124,7 @@ class Updater
             $statusPasien->fromDbRecord($item);
             $status[] = $statusPasien;
         }
+        $this->logger->debug("Sending TB RO " . count($status) . " items");
 
         // $statusPasien = new StatusPasien();
         // $status[] = $statusPasien->fromArray([

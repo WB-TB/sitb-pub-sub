@@ -10,6 +10,7 @@ class StatusPasien extends TbObject
     public $pasien_nik;
     public $pasien_tb_id;
     public $hasil_diagnosa;
+    public $hasil_diagnosa_tipe;
     public $diagnosa_lab_hasil_tcm;
     public $diagnosa_lab_hasil_bta;
     public $diagnosa_hasil_radiologi;
@@ -40,6 +41,7 @@ class StatusPasien extends TbObject
             'pasien_nik' => $this->pasien_nik,
             'pasien_tb_id' => $this->pasien_tb_id,
             'hasil_diagnosa' => $this->hasil_diagnosa,
+            'hasil_diagnosa_tipe' => $this->hasil_diagnosa_tipe,
             'diagnosa_lab_hasil_tcm' => $this->diagnosa_lab_hasil_tcm,
             'diagnosa_lab_hasil_bta' => $this->diagnosa_lab_hasil_bta,
             'diagnosa_hasil_radiologi' => $this->diagnosa_hasil_radiologi,
@@ -55,6 +57,7 @@ class StatusPasien extends TbObject
         $this->pasien_nik = isset($data['nik']) ? $data['nik'] : null;
         $this->pasien_tb_id = isset($data['person_id']) ? $data['person_id'] : null;
         $this->hasil_diagnosa = isset($data['diagnosis']) ? $data['diagnosis'] : null;
+        $this->hasil_diagnosa_tipe = isset($data['tipe_diagnosis_tbc']) ? $data['tipe_diagnosis_tbc'] : null;
         $this->diagnosa_lab_hasil_tcm = isset($data['hasil_tcm']) ? $data['hasil_tcm'] : null;
         $this->diagnosa_lab_hasil_bta = isset($data['hasil_biakan']) ? $data['hasil_biakan'] : null;
         $this->diagnosa_hasil_radiologi = isset($data['hasil_foto_toraks']) ? $data['hasil_foto_toraks'] : null;

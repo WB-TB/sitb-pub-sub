@@ -105,7 +105,7 @@ class Receiver
         $stmt->execute($ids);
         $result = $stmt->fetchAll(\PDO::FETCH_COLUMN);
 
-        return $result ?: [];
+        return $result ? $result : [];
     }
 
     private function getExistingData(array $rawMessages, array $validIds): array {
@@ -140,7 +140,7 @@ class Receiver
         $stmt->execute($exists);
         $result = $stmt->fetchAll(\PDO::FETCH_KEY_PAIR);
 
-        return $result ?: [];
+        return $result ? $result : [];
     }
 
     private function logNewMessage($messageId, $data, $attributes) {

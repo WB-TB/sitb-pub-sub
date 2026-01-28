@@ -35,7 +35,7 @@ class Consumer extends Client
      */
     public function pull($maxMessages = null)
     {
-        $maxMessages = $maxMessages ?: $this->maxMessagesPerPull;
+        $maxMessages = $maxMessages ? $maxMessages : $this->maxMessagesPerPull;
         
         // Validate maxMessages
         if ($maxMessages <= 0 || $maxMessages > 1000) {
@@ -118,7 +118,7 @@ class Consumer extends Client
      */
     public function processMessages(callable $inspector, callable $runner, $maxMessages = null)
     {
-        $maxMessages = $maxMessages ?: $this->maxMessagesPerPull;
+        $maxMessages = $maxMessages ? $maxMessages : $this->maxMessagesPerPull;
         
         // Apply flow control if enabled
         if ($this->flowControlEnabled) {
@@ -245,8 +245,8 @@ class Consumer extends Client
      */
     public function listen(callable $inspector, callable $runner, $sleepTime = null, $maxMessages = null)
     {
-        $sleepTime = $sleepTime ?: $this->sleepTimeBetweenPulls;
-        $maxMessages = $maxMessages ?: $this->maxMessagesPerPull;
+        $sleepTime = $sleepTime ? $sleepTime : $this->sleepTimeBetweenPulls;
+        $maxMessages = $maxMessages ? $maxMessages : $this->maxMessagesPerPull;
         
         $this->logger->info("Starting message listener...");
         $this->logger->info("Listening to subscription: {$this->subscriptionName}");

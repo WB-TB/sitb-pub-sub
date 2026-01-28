@@ -141,7 +141,7 @@ class TaSkrining
         $stmt->execute([$ckgId]);
         $result = $stmt->fetch(\PDO::FETCH_ASSOC);
         
-        return $result ?: null;
+        return $result ? $result : null;
     }
     
     /**
@@ -157,6 +157,6 @@ class TaSkrining
         $stmt->execute([$nik]);
         $result = $stmt->fetch(\PDO::FETCH_ASSOC);
         
-        return $result ?: null;
+        return $result ? $result : null;
     }
 }

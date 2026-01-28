@@ -53,7 +53,7 @@ class LapTbc03
             $stmt->execute([$start, $end, $limit]);
             $result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             
-            return $result ?: [];
+            return $result ? $result : [];
         }
     }
 }

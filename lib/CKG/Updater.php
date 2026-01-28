@@ -278,7 +278,7 @@ class Updater
         $stmt->execute($ids);
         $result = $stmt->fetchAll(\PDO::FETCH_COLUMN);
 
-        return $result ?: [];
+        return $result ? $result : [];
     }
 
     private function removePubSubMessages() {

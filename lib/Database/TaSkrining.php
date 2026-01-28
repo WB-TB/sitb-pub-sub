@@ -40,6 +40,7 @@ class TaSkrining
     {
         try {
             $data = $skrining->toDbRecord();
+            $this->logger->debug("Simpan Data Skrining TBC: " . json_encode($data, JSON_PRETTY_PRINT));
             if (!isset($data['ckg_id']))
                 throw new \Exception('Data tidak memiliki Pasien ID CKG');
             

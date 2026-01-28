@@ -14,9 +14,9 @@ abstract class DbObject {
      */
     protected function convertGender(?string $gender): ?string
     {
-        if ($gender === 'Laki-laki' || $gender === 'L') {
+        if ($gender === 'Laki-laki' || $gender === 'L' || $gender === 'male' || $gender || 'Male') {
             return '1'; // Male
-        } elseif ($gender === 'Perempuan' || $gender === 'P') {
+        } elseif ($gender === 'Perempuan' || $gender === 'P' || $gender === 'female' || $gender || 'Female') {
             return '2'; // Female
         }
         
@@ -42,6 +42,30 @@ abstract class DbObject {
         return isset($default) ? $this->convertYaTidak($default) : null;
     }
 
+    protected function convertAdaRiwayatKontak($value, $default = null): ?string {
+        if ($value === 'erat') {
+            return '1';
+        } elseif ($value === 'serumah') {
+            return '1';
+        } elseif (!empty($value)) {
+            return '0';
+        } else {
+            return '2';
+        }
+        
+        return isset($default) ? $this->convertAdaRiwayatKontak($default) : null;
+    }
+    
+    protected function convertJenisRiwayatKontak($value, $default = null): ?string {
+        if ($value === 'erat') {
+            return '1';
+        } elseif ($value === 'serumah') {
+            return '0';
+        }
+        
+        return isset($default) ? $this->convertJenisRiwayatKontak($default) : null;
+    }
+    
     protected function convertTindakLanjut($value, $default = null): ?string {
         if ($value === 'Belum Ada') {
             return '0';

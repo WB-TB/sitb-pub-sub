@@ -182,7 +182,7 @@ class Updater
                     $apiConfig = $this->config['api'] ? $this->config['api'] : [];
                     $apiClient = new ApiClient($apiConfig);
                     $batchSize = $apiConfig['batch_size'] && $apiConfig['batch_size'] > 1 ? $apiConfig['batch_size'] : 100;
-                    $endpoint = '/v1/ckg/tb/status-pasien';
+                    $endpoint = '/tb/status-pasien';
                     $batchSize = min(count($statusPasien), $batchSize, 500); // Batasi maksimal batch size ke 500
                     
                     // Process data in batches if batchSize is configured

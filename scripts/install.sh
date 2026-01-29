@@ -86,6 +86,49 @@ else
 fi
 
 if [ "$NO_GIT" -eq 1 ]; then
+    if [ "$INSTALL_MODE" = "update" ]; then
+        echo "   -> Checking for version update..."
+        VERSION_URL="https://raw.githubusercontent.com/WB-TB/sitb-pub-sub/refs/heads/main/version"
+        
+        if command -v wget &> /dev/null; then
+            wget -q -O "$TEMP_DIR/remote_version" "$VERSION_URL"
+        elif command -v curl &> /dev/null; then
+            curl -sL -o "$TEMP_DIR/remote_version" "$VERSION_URL"
+        else
+            echo "   -> [ERROR] Neither wget nor curl is available. Cannot check version."
+            rm -rf "$TEMP_DIR"
+            exit 1
+        fi
+        
+        if [ $? -ne 0 ]; then
+            echo "   -> [ERROR] Failed to download version file"
+            rm -rf "$TEMP_DIR"
+            exit 1
+        fi
+        
+        # Read remote version
+        REMOTE_VERSION=$(cat "$TEMP_DIR/remote_version" | tr -d '[:space:]')
+        
+        # Read local version if exists
+        if [ -f "$TARGET_DIR/version" ]; then
+            LOCAL_VERSION=$(cat "$TARGET_DIR/version" | tr -d '[:space:]')
+        else
+            LOCAL_VERSION=""
+        fi
+        
+        echo "   -> Remote version: $REMOTE_VERSION"
+        echo "   -> Local version: $LOCAL_VERSION"
+        
+        # Compare versions
+        if [ "$REMOTE_VERSION" = "$LOCAL_VERSION" ]; then
+            echo "   -> [INFO] No version update available. Current version: $LOCAL_VERSION"
+            rm -rf "$TEMP_DIR"
+            exit 0
+        else
+            echo "   -> [INFO] Version update available: $LOCAL_VERSION -> $REMOTE_VERSION"
+        fi
+    fi
+
     # Handle installation without git - download zip from REPO_URL and extract
     echo " + Downloading repository as zip file..."
     
@@ -105,7 +148,7 @@ if [ "$NO_GIT" -eq 1 ]; then
         rm -rf "$TEMP_DIR"
         exit 1
     fi
-    
+
     if [ $? -ne 0 ]; then
         echo "   -> [ERROR] Failed to download repository zip file"
         rm -rf "$TEMP_DIR"
@@ -284,6 +327,10 @@ if [ "$SYSTEM_MANAGER" = "systemd" ]; then
 # CKG Producer Cronjobs
 # Run ckg-producer pubsub or api daily at 2:00 AM
 0 2 * * * root $TARGET_DIR/scripts/producer/ckg-producer >> /var/log/ckg-producer.log 2>&1
+
+# Update Service
+# Check for git updates every 15 minutes and pull if there are changes
+0 0 * * * root $TARGET_DIR/scripts/install.sh update >> /var/log/ckg-update.log 2>&1
 EOF
     
     # Set proper permissions for cron file

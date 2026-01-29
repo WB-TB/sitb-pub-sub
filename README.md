@@ -83,6 +83,16 @@ ALTER TABLE ta_skrining ADD COLUMN ckg_id varchar(16) DEFAULT NULL;
 
 ### 4. Update file Konfigurasi
 
+**4.1 Copy file konfigurasi**
+
+Salin file konfigurasi contoh ke file konfigurasi aktif:
+
+```bash
+cp /opt/sitb-ckg/config.example.php /opt/sitb-ckg/config.php
+```
+
+**4.2 Edit parameter konfigurasi**
+
 Untuk dokumentasi lengkap mengenai konfigurasi, silakan lihat file [`docs/CONFIG.md`](./docs/CONFIG.md).
 
 Dokumentasi tersebut mencakup:

@@ -59,13 +59,34 @@ is_running() {
     return 1
 }
 
+# Get all running consumer processes (including those not in PIDFILE)
+get_all_consumer_pids() {
+    # Find all processes running the consumer script
+    ps aux | grep -E "(run-consumer\.sh|consumer\.php)" | grep -v grep | awk '{print $2}'
+}
+
+# Count running consumer processes
+count_running_consumers() {
+    local count=$(get_all_consumer_pids | wc -l)
+    echo $count
+}
+
 # Start the service
 do_start() {
     echo -n "Starting $DESC: "
     
-    if is_running; then
-        echo "already running (PID: $(get_pid))"
-        return 0
+    # Check for any existing consumer processes
+    local existing_pids=$(get_all_consumer_pids)
+    if [ -n "$existing_pids" ]; then
+        local pid_count=$(echo "$existing_pids" | wc -w)
+        echo ""
+        echo "Error: Found $pid_count consumer process(es) already running:"
+        for pid in $existing_pids; do
+            echo "  - PID: $pid"
+        done
+        echo ""
+        echo "Please use 'stop' or 'restart' command instead."
+        return 1
     fi
     
     # Start the consumer in background
@@ -92,33 +113,48 @@ do_start() {
 do_stop() {
     echo -n "Stopping $DESC: "
     
-    if ! is_running; then
+    # Get all consumer processes
+    local all_pids=$(get_all_consumer_pids)
+    
+    if [ -z "$all_pids" ]; then
         echo "not running"
         rm -f "$PIDFILE"
         return 0
     fi
     
-    local pid=$(get_pid)
+    local pid_count=$(echo "$all_pids" | wc -w)
+    echo "found $pid_count running process(es), stopping... "
     
-    # Try graceful shutdown first
-    kill -TERM "$pid" 2>/dev/null
+    # Try graceful shutdown first for all processes
+    for pid in $all_pids; do
+        kill -TERM "$pid" 2>/dev/null
+    done
     
-    # Wait for process to terminate
+    # Wait for processes to terminate
     local count=0
-    while is_running && [ $count -lt 30 ]; do
+    while [ $count -lt 30 ]; do
+        local remaining=$(get_all_consumer_pids)
+        if [ -z "$remaining" ]; then
+            break
+        fi
         sleep 1
         count=$((count + 1))
     done
     
-    # Force kill if still running
-    if is_running; then
-        echo -n "force killing... "
-        kill -KILL "$pid" 2>/dev/null
+    # Force kill any remaining processes
+    local remaining=$(get_all_consumer_pids)
+    if [ -n "$remaining" ]; then
+        echo -n "force killing remaining processes... "
+        for pid in $remaining; do
+            kill -KILL "$pid" 2>/dev/null
+        done
         sleep 1
     fi
     
-    if is_running; then
-        echo "failed to stop"
+    # Final check
+    local final_remaining=$(get_all_consumer_pids)
+    if [ -n "$final_remaining" ]; then
+        echo "failed to stop some processes"
         return 1
     else
         echo "stopped"
@@ -158,9 +194,18 @@ do_reload() {
 
 # Get service status
 do_status() {
-    if is_running; then
-        local pid=$(get_pid)
-        echo "$DESC is running (PID: $pid)"
+    local all_pids=$(get_all_consumer_pids)
+    
+    if [ -n "$all_pids" ]; then
+        local pid_count=$(echo "$all_pids" | wc -w)
+        if [ $pid_count -eq 1 ]; then
+            echo "$DESC is running (PID: $all_pids)"
+        else
+            echo "$DESC has $pid_count running process(es):"
+            for pid in $all_pids; do
+                echo "  - PID: $pid"
+            done
+        fi
         return 0
     else
         echo "$DESC is not running"
@@ -190,8 +235,30 @@ case "$1" in
         do_status
         exit $?
         ;;
+    cleanup)
+        echo "Cleaning up all consumer processes..."
+        local all_pids=$(get_all_consumer_pids)
+        if [ -n "$all_pids" ]; then
+            echo "Found $(echo "$all_pids" | wc -w) consumer process(es)"
+            for pid in $all_pids; do
+                echo "Killing PID $pid..."
+                kill -TERM "$pid" 2>/dev/null
+            done
+            sleep 2
+            # Force kill remaining
+            for pid in $(get_all_consumer_pids); do
+                echo "Force killing PID $pid..."
+                kill -KILL "$pid" 2>/dev/null
+            done
+            rm -f "$PIDFILE"
+            echo "Cleanup complete"
+        else
+            echo "No consumer processes found"
+        fi
+        exit 0
+        ;;
     *)
-        echo "Usage: $0 {start|stop|restart|reload|force-reload|status}"
+        echo "Usage: $0 {start|stop|restart|reload|force-reload|status|cleanup}"
         exit 1
         ;;
 esac

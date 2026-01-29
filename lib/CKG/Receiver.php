@@ -29,7 +29,7 @@ class Receiver
     public function prepare(array $rawMessages): array {;
         $validIds = $this->getExistingMessageIds(array_keys($rawMessages));
         // $updates = $this->getExistingData($rawMessages, $validIds);
-        $this->logger->debug("Prepare Messages: " . print_r($rawMessages, true));
+        $this->logger->debug("Prepare Messages: " . json_encode($rawMessages, JSON_PRETTY_PRINT));
         $valid = [];
         foreach ($rawMessages as $messageId => $message) {
             if (in_array($messageId, $validIds)) {

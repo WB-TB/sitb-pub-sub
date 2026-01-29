@@ -56,7 +56,7 @@ class PubSubObjectWrapper {
                     array_push($this->data, $x);
                 }
             }
-            \Boot::getLogger()->debug("DATA: " . print_r($data['data'], true));
+            \Boot::getLogger()->debug("Read Data From Pub/Sub: " . json_encode($data['data'], JSON_PRETTY_PRINT));
         }
     }
 

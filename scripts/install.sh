@@ -10,6 +10,14 @@ SERVICE_CONSUMER_FILE="ckg-consumer.service"
 SERVICE_CONSUMER_NAME="ckg-consumer"
 NO_GIT=0
 INSTALL_MODE=$1
+USE_COMPOSER=$(which composer)
+USE_GIT=$(which git)
+USE_WGET=$(which wget)
+USE_CURL=$(which curl)
+USE_SYSTEMD=$(which systemctl)
+USE_CHKCONFIG=$(which chkconfig)
+USE_UPDATERC=$(which update-rc.d)
+USE_SERVICE=$(which service)
 if [ "$INSTALL_MODE" = "update" ]; then
     echo "Starting SITB-CKG update..."
 else
@@ -18,7 +26,7 @@ else
 fi
 
 # Check if running as root
-if [ "$EUID" -ne 0 ]; then
+if [ "$(id -u)" -ne 0 ]; then
     echo "   -> [ERROR] This script must be run as root. Please use sudo."
     exit 1
 fi
@@ -34,16 +42,16 @@ PHPVERSION=$($PHPEXEC -r 'echo PHP_VERSION;')
 echo "Using PHP version: $PHPVERSION"
 
 # Check if composer is installed
-if command -v composer &> /dev/null; then
-    echo " + Composer is installed."
-else
+if [ -z "$USE_COMPOSER" ]; then
     echo " + [WARNING]: Composer is not installed. Composer will be installed locally."
     curl -sS https://getcomposer.org/installer | $PHPEXEC
 fi
 
 # Check if git is installed
-if ! command -v git &> /dev/null; then
+if [ -z "$USE_GIT" ]; then
     echo "   -> [WARNING] git is not installed. Will download repository as zip file instead."
+    NO_GIT=1
+elif [ -f "$TARGET_DIR/version" -a ! -d "$TARGET_DIR/.git" ]; then # tidak melalui git
     NO_GIT=1
 fi
 
@@ -77,9 +85,7 @@ else
         exit 1
     fi
 
-    if [ -f "composer.json" ]; then
-        echo " + composer.json found in $TARGET_DIR."
-    else
+    if [ ! -f "$TARGET_DIR/composer.json" ]; then
         echo "   -> [ERROR] No composer.json found in the $TARGET_DIR."
         exit 1
     fi
@@ -90,9 +96,9 @@ if [ "$NO_GIT" -eq 1 ]; then
         echo "   -> Checking for version update..."
         VERSION_URL="https://raw.githubusercontent.com/WB-TB/sitb-pub-sub/refs/heads/main/version"
         
-        if command -v wget &> /dev/null; then
+        if [ -n "$USE_WGET" ]; then
             wget -q -O "$TEMP_DIR/remote_version" "$VERSION_URL"
-        elif command -v curl &> /dev/null; then
+        elif [ -n "$USE_CURL" ]; then
             curl -sL -o "$TEMP_DIR/remote_version" "$VERSION_URL"
         else
             echo "   -> [ERROR] Neither wget nor curl is available. Cannot check version."
@@ -116,9 +122,6 @@ if [ "$NO_GIT" -eq 1 ]; then
             LOCAL_VERSION=""
         fi
         
-        echo "   -> Remote version: $REMOTE_VERSION"
-        echo "   -> Local version: $LOCAL_VERSION"
-        
         # Compare versions
         if [ "$REMOTE_VERSION" = "$LOCAL_VERSION" ]; then
             echo "   -> [INFO] No version update available. Current version: $LOCAL_VERSION"
@@ -139,9 +142,9 @@ if [ "$NO_GIT" -eq 1 ]; then
     ZIP_URL="${REPO_URL%.git}/archive/refs/heads/main.zip"
     echo "   -> Downloading from: $ZIP_URL"
     
-    if command -v wget &> /dev/null; then
+    if [ -n "$USE_WGET" ]; then
         wget -q -O "$TEMP_DIR/repo.zip" "$ZIP_URL"
-    elif command -v curl &> /dev/null; then
+    elif [ -n "$USE_CURL" ]; then
         curl -sL -o "$TEMP_DIR/repo.zip" "$ZIP_URL"
     else
         echo "   -> [ERROR] Neither wget nor curl is available. Cannot download repository."
@@ -268,7 +271,7 @@ echo " + Repository cloned/updated successfully at $TARGET_DIR"
 echo " + Detecting system manager..."
 SYSTEM_MANAGER="init.d"
 
-if command -v systemctl &> /dev/null && [ -d /run/systemd/system ]; then
+if [ -n "$USE_SYSTEMD" ] && [ -d /run/systemd/system ]; then
     SYSTEM_MANAGER="systemd"
     echo "   -> System manager detected: systemd"
 else
@@ -338,9 +341,9 @@ EOF
     
     # Reload cron service to recognize new cronjobs
     echo "   -> Reloading cron service..."
-    if command -v systemctl &> /dev/null && systemctl is-active --quiet cron; then
+    if [ -n "$USE_SYSTEMD" ] && systemctl is-active --quiet cron; then
         systemctl reload cron
-    elif command -v systemctl &> /dev/null && systemctl is-active --quiet crond; then
+    elif [ -n "$USE_SYSTEMD" ] && systemctl is-active --quiet crond; then
         systemctl reload crond
     fi
     
@@ -412,11 +415,11 @@ else
     chmod 755 "/etc/init.d/ckg-consumer"
 
     # Enable consumer service to start on boot using chkconfig if available
-    if command -v chkconfig &> /dev/null; then
+    if [ -n "$USE_CHKCONFIG" ]; then
         echo " + Enabling consumer service with chkconfig..."
         chkconfig --add ckg-consumer
         chkconfig ckg-consumer on
-    elif command -v update-rc.d &> /dev/null; then
+    elif [ -n "$USE_UPDATERC" ]; then
         echo " + Enabling consumer service with update-rc.d..."
         update-rc.d ckg-consumer defaults
     else
@@ -445,7 +448,7 @@ EOF
     
     # Reload cron service to recognize new cronjobs
     echo "   -> Reloading cron service..."
-    if command -v service &> /dev/null; then
+    if [ -n "$USE_SERVICE" ]; then
         service cron reload 2>/dev/null || service crond reload 2>/dev/null
     elif [ -f /etc/init.d/cron ]; then
         /etc/init.d/cron reload 2>/dev/null

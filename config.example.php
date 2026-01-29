@@ -43,9 +43,9 @@ return [
         ]
     ],
     'api' => [
-        'base_url' => 'https://api-dev.dto.kemkes.go.id/fhir-sirs', // <-- BUTUH DIUPDATE
+        'base_url' => 'https://api.sspkg.appgo.my.id/api', // <-- BUTUH DIUPDATE
         'timeout' => 60, // seconds
-        'api_key' => 'your_api_key_here', // <-- BUTUH DIUPDATE
+        'api_key' => 'your_api_key_here',                           // <-- BUTUH DIUPDATE
         'api_header' => 'X-API-Key:',
         'batch_size' => 100
     ],
@@ -63,9 +63,9 @@ return [
         'producer-api' => '/var/log/sitb-ckg/producer-api.log',
     ],
     'ckg' => [
-        'table_skrining' => 'ta_skrining',                         // <-- BUTUH DIUPDATE
-        'table_laporan_so' => 'lap_tbc_03so',                      // <-- BUTUH DIUPDATE nama tabel laporan SO
-        'table_laporan_ro' => 'lap_tbc_03ro',                      // <-- BUTUH DIUPDATE nama tabel laporan RO
+        'table_skrining' => 'ta_skrining',                          // <-- CEK SUDAH SESUAI
+        'table_laporan_so' => 'lap_tbc_03so',                       // <-- CEK SUDAH SESUAI nama tabel laporan SO
+        'table_laporan_ro' => 'lap_tbc_03ro',                       // <-- CEK SUDAH SESUAI nama tabel laporan RO
         'table_incoming' => 'ckg_pubsub_incoming',
         'table_outgoing' => 'ckg_pubsub_outgoing',
         'marker_field' => 'transactionSource',

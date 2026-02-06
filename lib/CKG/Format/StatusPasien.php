@@ -25,6 +25,7 @@ class StatusPasien extends TbObject
         $this->pasien_nik = isset($data['pasien_nik']) ? $data['pasien_nik'] : null;
         $this->pasien_tb_id = isset($data['pasien_tb_id']) ? $data['pasien_tb_id'] : null;
         $this->hasil_diagnosa = isset($data['hasil_diagnosa']) ? $data['hasil_diagnosa'] : null;
+        $this->hasil_diagnosa_tipe = isset($data['hasil_diagnosa_tipe']) ? $data['hasil_diagnosa_tipe'] : null;
         $this->diagnosa_lab_hasil_tcm = isset($data['diagnosa_lab_hasil_tcm']) ? $data['diagnosa_lab_hasil_tcm'] : null;
         $this->diagnosa_lab_hasil_bta = isset($data['diagnosa_lab_hasil_bta']) ? $data['diagnosa_lab_hasil_bta'] : null;
         $this->diagnosa_hasil_radiologi = isset($data['diagnosa_hasil_radiologi']) ? $data['diagnosa_hasil_radiologi'] : null;
@@ -56,8 +57,8 @@ class StatusPasien extends TbObject
         $this->terduga_id = isset($data['id_reg_terduga']) ? $data['id_reg_terduga'] : null;
         $this->pasien_nik = isset($data['nik']) ? $data['nik'] : null;
         $this->pasien_tb_id = isset($data['person_id']) ? $data['person_id'] : null;
-        $this->hasil_diagnosa = isset($data['diagnosis']) ? $data['diagnosis'] : null;
-        $this->hasil_diagnosa_tipe = isset($data['tipe_diagnosis_tbc']) ? $data['tipe_diagnosis_tbc'] : null;
+        $this->hasil_diagnosa = $this->convertHasilDiagnosis($data['diagnosis']);
+        $this->hasil_diagnosa_tipe =  $this->convertTipeHasilDiagnosis($data['tipe_diagnosis_tbc']);
         $this->diagnosa_lab_hasil_tcm = isset($data['hasil_tcm']) ? $data['hasil_tcm'] : null;
         $this->diagnosa_lab_hasil_bta = isset($data['hasil_biakan']) ? $data['hasil_biakan'] : null;
         $this->diagnosa_hasil_radiologi = isset($data['hasil_foto_toraks']) ? $data['hasil_foto_toraks'] : null;

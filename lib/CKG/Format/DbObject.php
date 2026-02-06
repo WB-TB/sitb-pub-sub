@@ -96,4 +96,38 @@ abstract class DbObject {
         
         return null;
     }
+
+    /**
+     * Convert Diagnosis result
+     * 
+     * @param string|null $value
+     * @return int|null
+     */
+    protected function convertHasilDiagnosis($value, $default = null): ?string
+    {
+        if (strpos($value, 'SO' !== false)) {
+            return 'TBC SO';
+        } elseif (strpos($value, 'RO' !== false)) {
+            return 'TBC RO';
+        }
+        
+        return isset($default) ? $this->convertHasilDiagnosis($default) : null;
+    }
+
+    /**
+     * Convert Diagnosis result type
+     * 
+     * @param string|null $value
+     * @return int|null
+     */
+    protected function convertTipeHasilDiagnosis($value, $default = null): ?string
+    {
+        if (stripos($value, 'bakteriologi' !== false)) {
+            return 'bakteriologis';
+        } elseif (stripos($value, 'klinis' !== false)) {
+            return 'klinis';
+        }
+        
+        return isset($default) ? $this->convertTipeHasilDiagnosis($default) : null;
+    }
 }

@@ -14,11 +14,16 @@ Ini adalah implementasi PHP untuk mengintegrasikan data SITB dengan Google Cloud
 - **Pemrosesan Batch**: Penerbitan dan pemrosesan batch yang efisien
 - **Retry Logic**: Mekanisme retry yang dapat dikonfigurasi dengan exponential backoff
 - **Logging Komprehensif**: Logging detail untuk debugging dan monitoring
-- **Layanan Systemd/Initd**: Aplikasi berjalan pada linux server sebagai `background process` yang dikelola menggunakan Systemd atau Initd sesuai `system manager` yang digunakan oleh server. Script instalasi secara otomatis mendeteksi ini untuk menjalankan script yang benar.
+- **Layanan Systemd/Initd (Linux)**: Aplikasi berjalan pada linux server sebagai `background process` yang dikelola menggunakan Systemd atau Initd sesuai `system manager` yang digunakan oleh server. Script instalasi secara otomatis mendeteksi ini untuk menjalankan script yang benar.
+- **Manual Execution (Windows)**: Pada Windows, aplikasi harus dijalankan secara manual melalui PowerShell atau Command Prompt.
 
 ## Instalasi CKG Service di SITB Server
 
+> **Catatan**: Instalasi mendukung Linux dan Windows. Pilih metode instalasi sesuai sistem operasi yang digunakan.
+
 ### 1. Install menggunakan script
+
+#### Linux
 
 Gunakan skrip berikut untuk melakukan instalasi modul secara cepat:
 
@@ -33,10 +38,33 @@ Skrip ini akan:
 - Menyiapkan layanan systemd atau initd untuk consumer, serta cronjob producer (baik mode `pubsub` atau `api`)
 - Mengonfigurasi permission sesuai kebutuhan `background process`
 
+#### Windows
+
+Gunakan skrip PowerShell berikut untuk melakukan instalasi modul secara cepat:
+
+```powershell
+# Download dan jalankan script instalasi
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/WB-TB/sitb-pub-sub/main/scripts/install.ps1" -OutFile "install.ps1"
+.\install.ps1 fresh
+```
+
+Skrip ini akan:
+- Mengunduh dan mengekstrak repositori ke `C:\sitb-ckg`
+- Menginstal dependensi Composer
+- **Tidak** membuat Windows service atau Task Scheduler (harus dijalankan secara manual)
+
+Untuk update instalasi yang sudah ada:
+
+```powershell
+.\install.ps1 update
+```
+
 ### 2. Siapkan Kredensial Google Cloud
 - Minta file `credentials.json` ke administrator SATUSEHAT-PKG
 - Unduh file JSON kredensial
-- Letakkan file di `/opt/sitb-ckg/credentials.json`
+- Letakkan file di:
+  - **Linux**: `/opt/sitb-ckg/credentials.json`
+  - **Windows**: `C:\sitb-ckg\credentials.json`
 
 ### 3. Siapkan database untuk penyimpanan sementara pesan Pub/Sub
 #### 3.1 Menerima Pesan masuk dari Pub/Sub (sebagai Consumer)
@@ -87,8 +115,14 @@ ALTER TABLE ta_skrining ADD COLUMN ckg_id varchar(16) DEFAULT NULL;
 
 Salin file konfigurasi contoh ke file konfigurasi aktif:
 
+**Linux:**
 ```bash
 cp /opt/sitb-ckg/config.example.php /opt/sitb-ckg/config.php
+```
+
+**Windows:**
+```powershell
+Copy-Item "C:\sitb-ckg\config.example.php" "C:\sitb-ckg\config.php"
 ```
 
 **4.2 Edit parameter konfigurasi**
@@ -117,17 +151,35 @@ Dokumentasi tersebut mencakup:
 - [`ckg.table_laporan_so`](./config.php:67) - Nama tabel laporan SO
 - [`ckg.table_laporan_ro`](./config.php:68) - Nama tabel laporan RO
 
-Edit file `/opt/sitb-ckg/config.php` sesuai dengan environment yang digunakan.
+Edit file sesuai dengan environment yang digunakan:
+- **Linux**: `/opt/sitb-ckg/config.php`
+- **Windows**: `C:\sitb-ckg\config.php`
 
-### 5. Restart Linux Service (Pub/Sub Consumer)
+### 5. Jalankan Service (Pub/Sub Consumer)
+
+#### Linux
 Setelah anda melakukan langkah 1-4 kemudian restart linux service untuk mulai menerima data Pub/Sub Skrining CKG dengan masuk ke terminal server SITB dan jalankan perintah berikut:
 ```bash
 sudo service ckg-consumer restart
 ```
 
+#### Windows
+Pada Windows, service harus dijalankan secara manual. Buka PowerShell atau Command Prompt dan jalankan:
+```powershell
+cd C:\sitb-ckg
+php consumer.php
+```
+
+Untuk menjalankan di background, Anda dapat menggunakan:
+```powershell
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd C:\sitb-ckg; php consumer.php"
+```
+
 ## Penggunaan CLI
 
 ### CLI Producer
+
+**Linux:**
 
 Mode Pub/Sub
 ```bash
@@ -139,10 +191,31 @@ Mode API
 php -f /opt/sitb-ckg/producer.php - --mode=api
 ```
 
+**Windows:**
+
+Mode Pub/Sub
+```powershell
+cd C:\sitb-ckg
+php producer.php pubsub
+```
+
+Mode API
+```powershell
+cd C:\sitb-ckg
+php producer.php api
+```
+
 ### CLI Consumer
 
+**Linux:**
 ```bash
 php -f /opt/sitb-ckg/consumer.php
+```
+
+**Windows:**
+```powershell
+cd C:\sitb-ckg
+php consumer.php
 ```
 
 ## Penanganan Kesalahan
@@ -155,7 +228,16 @@ Implementasi ini mencakup penanganan kesalahan yang komprehensif dengan:
 
 ## Monitoring
 
+**Linux:**
 Semua operasi dicatat ke systemd journal dengan tingkat log yang dapat dikonfigurasi. Log mencakup:
+
+- Status publish/acknowledge pesan
+- Statistik pemrosesan dan tingkat keberhasilan
+- Detail error dan percobaan retry
+- Metrik performa
+
+**Windows:**
+Semua operasi dicatat ke file log di direktori `C:\sitb-ckg\logs\`. Log mencakup:
 
 - Status publish/acknowledge pesan
 - Statistik pemrosesan dan tingkat keberhasilan
@@ -164,8 +246,13 @@ Semua operasi dicatat ke systemd journal dengan tingkat log yang dapat dikonfigu
 
 ### Lokasi Log
 
+**Linux:**
 - **Layanan Consumer**: `/var/log/sitb-ckg/consumer.log`
 - **Layanan Producer (API dan Pub/Sub)**: `/var/log/sitb-ckg/producer.log`
+
+**Windows:**
+- **Layanan Consumer**: `C:\sitb-ckg\logs\ckg-consumer.log`
+- **Layanan Producer (API dan Pub/Sub)**: `C:\sitb-ckg\logs\ckg-producer.log`
 
 ## Pengujian
 
@@ -182,7 +269,11 @@ Untuk pengiriman data dari SITB ke server CKG menggunakan **Laporan TBC 03 (SO d
 
 Pengiriman dapat dilakukan melalui channel `Google Pub/Sub` atau `API`. Pilihan default jika tidak ada perubahan config adalah **`API`**.
 
-> Data akan dijalankan menggunakan CronJob (Scheduller) setiap hari pada pukul 02.00 (dini hari) untuk mengirim data pada hari sebelumnya secara bertahap (dalam batch berukuran 100 data per batch). Ukuran batch pengiriman bisa diubah pada `/opt/sitb-ckg/config.php` pada parameter `$config['producer']['batch_size']`
+> Data akan dijalankan menggunakan CronJob (Scheduller) setiap hari pada pukul 02.00 (dini hari) untuk mengirim data pada hari sebelumnya secara bertahap (dalam batch berukuran 100 data per batch). Ukuran batch pengiriman bisa diubah pada:
+> - **Linux**: `/opt/sitb-ckg/config.php`
+> - **Windows**: `C:\sitb-ckg\config.php`
+> 
+> pada parameter `$config['producer']['batch_size']`
 ```php
 return [
     // ...

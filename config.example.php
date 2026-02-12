@@ -4,16 +4,16 @@ return [
     'environment' => 'development',
     'producer_mode' => 'api', // 'pubsub' or 'api'
     'google_cloud' => [
-        'project_id' => 'ckg-tb-staging',                                       // <-- BUTUH DIUPDATE
+        'project_id' => 'dto-ihs-dev',                                       // <-- BUTUH DIUPDATE
         'credentials_path' => __DIR__ . '/credentials.json',
         'debug' => false,
     ],
     'pubsub' => [
-        'default_topic' => 'projects/ckg-tb-staging/topics/CKG-SITB',            // <-- BUTUH DIUPDATE
-        'default_subscription' => 'projects/ckg-tb-staging/subscriptions/Dev',   // <-- BUTUH DIUPDATE
+        'default_topic' => 'projects/dto-ihs-dev/topics/pkg-konsolidator-tb',            // <-- BUTUH DIUPDATE
+        'default_subscription' => 'projects/dto-ihs-dev/subscriptions/pkg-konsolidator-tb-sub',   // <-- BUTUH DIUPDATE
         'topics' => [
-            'projects/ckg-tb-staging/topics/CKG-SITB' => [
-                'subscription' => 'projects/ckg-tb-staging/subscriptions/Dev',
+            'projects/dto-ihs-dev/topics/pkg-konsolidator-tb' => [
+                'subscription' => 'projects/dto-ihs-dev/subscriptions/pkg-konsolidator-tb-sub',
                 'message_ordering' => false
             ],
         ]

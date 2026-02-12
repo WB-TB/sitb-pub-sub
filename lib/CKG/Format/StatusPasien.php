@@ -38,7 +38,7 @@ class StatusPasien extends TbObject
     public function toArray(): array
     {
         return [
-            'terduga_id' => $this->terduga_id,
+            'terduga_id' => $this->terduga_id + '',
             'pasien_nik' => $this->pasien_nik,
             'pasien_tb_id' => $this->pasien_tb_id,
             'hasil_diagnosa' => $this->hasil_diagnosa,
@@ -54,7 +54,7 @@ class StatusPasien extends TbObject
     }
 
     public function fromDbRecord(array $data) {
-        $this->terduga_id = isset($data['id_reg_terduga']) ? $data['id_reg_terduga'] : null;
+        $this->terduga_id = isset($data['id_reg_terduga']) ? $data['id_reg_terduga'] + '' : null;
         $this->pasien_nik = isset($data['nik']) ? $data['nik'] : null;
         $this->pasien_tb_id = isset($data['person_id']) ? $data['person_id'] : null;
         $this->hasil_diagnosa = $this->convertHasilDiagnosis($data['diagnosis']);

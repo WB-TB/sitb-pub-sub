@@ -10,6 +10,7 @@ SERVICE_CONSUMER_FILE="ckg-consumer.service"
 SERVICE_CONSUMER_NAME="ckg-consumer"
 NO_GIT=0
 INSTALL_MODE=$1
+NO_COMPOSER=1
 USE_COMPOSER=$(which composer)
 USE_GIT=$(which git)
 USE_WGET=$(which wget)
@@ -42,7 +43,7 @@ PHPVERSION=$($PHPEXEC -r 'echo PHP_VERSION;')
 echo "Using PHP version: $PHPVERSION"
 
 # Check if composer is installed
-if [ -z "$USE_COMPOSER" ]; then
+if [ -z "$USE_COMPOSER" -a $NO_COMPOSER -eq 1 ]; then
     echo " + [WARNING]: Composer is not installed. Composer will be installed locally."
     curl -sS https://getcomposer.org/installer | $PHPEXEC
 fi
@@ -257,15 +258,17 @@ fi
 
 # Install Composer dependencies
 cd "$TARGET_DIR"
-echo " + Installing Composer dependencies..."
-# Install dependencies as the sitb-ckg user
-# sudo -u $USERID composer install --no-dev --optimize-autoloader
-sudo -u $USERID composer update
-if [ $? -ne 0 ]; then
-    echo "   -> [ERROR] Failed to install Composer dependencies"
-    exit 1
+if [ -n "$USE_COMPOSER" -a $NO_COMPOSER -ne 1 ]; then
+    echo " + Installing Composer dependencies..."
+    # Install dependencies as the sitb-ckg user
+    # sudo -u $USERID composer install --no-dev --optimize-autoloader
+    sudo -u $USERID composer update
+    if [ $? -ne 0 ]; then
+        echo "   -> [ERROR] Failed to install Composer dependencies"
+        exit 1
+    fi
+    echo "   -> Composer dependencies installed successfully"
 fi
-echo "   -> Composer dependencies installed successfully"
 
 # Update the service file with the correct PHP path and working directory
 sed -i "s|/usr/bin/php|$PHPEXEC|g" "$TARGET_DIR/scripts/consumer/$SERVICE_CONSUMER_FILE"

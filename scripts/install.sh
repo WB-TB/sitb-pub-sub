@@ -75,6 +75,8 @@ if [ "$INSTALL_MODE" = "fresh" ]; then
     # Create log directory if it doesn't exist
     echo "   -> Creating log directory: $LOG_DIR"
     mkdir -p "$LOG_DIR"
+    chown "$USERID:$GROUPID" "$LOG_DIR"
+    chmod 755 "$LOG_DIR"
 else
     if [ "$NO_GIT" -eq 0 -a ! -d "$TARGET_DIR/.git" ]; then
         echo "   -> [ERROR] Cannot update: Repository does not exist at $TARGET_DIR"
@@ -188,6 +190,8 @@ if [ "$NO_GIT" -eq 1 ]; then
         # For fresh install, create directory if it doesn't exist
         if [ ! -d "$TARGET_DIR" ]; then
             mkdir -p "$TARGET_DIR"
+            chown "$USERID:$GROUPID" "$TARGET_DIR"
+            chmod 755 "$TARGET_DIR"
         fi
     fi
     
@@ -227,7 +231,13 @@ else
             echo "   -> Please remove it or move it before running this script"
             exit 1
         fi
+
+        # Menambahkan safe.directory untuk Git
+        git config --global --add safe.directory "$TARGET_DIR"
+
+        # Clone the repository
         git clone "$REPO_URL" "$TARGET_DIR"
+        
         if [ $? -ne 0 ]; then
             echo "   -> Error: Failed to clone repository"
             exit 1
@@ -549,7 +559,7 @@ if [ "$INSTALL_MODE" = "fresh" ]; then
         echo "   ->   \"token_uri\": \"https://oauth2.googleapis.com/token\""
         echo "   -> }"
         echo ""
-        read -p "   -> Press Enter to continue after creating credentials.json..."
+        # read -p "   -> Press Enter to continue after creating credentials.json..."
         NEED_CONFIGURE="yes"
     else
         echo "   -> credentials.json found"
@@ -566,7 +576,7 @@ if [ "$INSTALL_MODE" = "fresh" ]; then
     echo "   -> - api.api_key"
     echo "   -> - Database connection settings"
     echo ""
-    read -p "   -> Press Enter to continue after configuring config.php..."
+    # read -p "   -> Press Enter to continue after configuring config.php..."
 
     echo ""
     echo " ----------------------------------------"

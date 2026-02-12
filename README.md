@@ -40,6 +40,10 @@ Skrip ini akan:
 
 #### Windows
 
+**Prasyarat:**
+- XAMPP terinstall di drive C (default: `C:\xampp`)
+- Git (opsional, jika tidak ada akan menggunakan download zip)
+
 Gunakan skrip PowerShell berikut untuk melakukan instalasi modul secara cepat:
 
 ```powershell
@@ -50,6 +54,7 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/WB-TB/sitb-pub-sub/mai
 
 Skrip ini akan:
 - Mengunduh dan mengekstrak repositori ke `C:\sitb-ckg`
+- Menggunakan PHP dan Composer dari XAMPP (`C:\xampp\php\`)
 - Menginstal dependensi Composer
 - **Tidak** membuat Windows service atau Task Scheduler (harus dijalankan secara manual)
 

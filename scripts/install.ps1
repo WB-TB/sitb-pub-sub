@@ -12,25 +12,37 @@ $REPO_URL = "https://github.com/WB-TB/sitb-pub-sub.git"
 $TARGET_DIR = "C:\sitb-ckg"
 $NO_GIT = $false
 
-# Check if PHP is installed
-$phpExec = Get-Command php -ErrorAction SilentlyContinue
-if (-not $phpExec) {
-    Write-Host "   -> [ERROR] PHP is not installed. Please install PHP first." -ForegroundColor Red
-    exit 1
+# Check if PHP is installed (XAMPP first, then system PATH)
+$xamppPhpPath = "C:\xampp\php\php.exe"
+if (Test-Path $xamppPhpPath) {
+    $phpPath = $xamppPhpPath
+    Write-Host "Found PHP in XAMPP: $phpPath"
+} else {
+    $phpExec = Get-Command php -ErrorAction SilentlyContinue
+    if (-not $phpExec) {
+        Write-Host "   -> [ERROR] PHP is not installed. Please install XAMPP or PHP first." -ForegroundColor Red
+        exit 1
+    }
+    $phpPath = $phpExec.Source
 }
 
-$phpPath = $phpExec.Source
 $phpVersion = & $phpPath -r "echo PHP_VERSION;"
 Write-Host "Using PHP version: $phpVersion"
 
-# Check if composer is installed
-$composerExec = Get-Command composer -ErrorAction SilentlyContinue
-if (-not $composerExec) {
-    Write-Host " + [WARNING]: Composer is not installed. Composer will be installed locally." -ForegroundColor Yellow
-    Invoke-Expression "& $phpPath -r `"copy('https://getcomposer.org/installer', 'composer-setup.php');`""
-    Invoke-Expression "& $phpPath composer-setup.php"
-    Remove-Item composer-setup.php -ErrorAction SilentlyContinue
-    $composerExec = ".\composer.phar"
+# Check if composer is installed (XAMPP first, then system PATH)
+$xamppComposerPath = "C:\xampp\php\composer.bat"
+if (Test-Path $xamppComposerPath) {
+    $composerExec = $xamppComposerPath
+    Write-Host "Found Composer in XAMPP: $composerExec"
+} else {
+    $composerExec = Get-Command composer -ErrorAction SilentlyContinue
+    if (-not $composerExec) {
+        Write-Host " + [WARNING]: Composer is not installed. Composer will be installed locally." -ForegroundColor Yellow
+        Invoke-Expression "& $phpPath -r `"copy('https://getcomposer.org/installer', 'composer-setup.php');`""
+        Invoke-Expression "& $phpPath composer-setup.php"
+        Remove-Item composer-setup.php -ErrorAction SilentlyContinue
+        $composerExec = ".\composer.phar"
+    }
 }
 
 # Check if git is installed
@@ -202,6 +214,9 @@ Write-Host " + Installing Composer dependencies..."
 try {
     if ($composerExec -eq ".\composer.phar") {
         & $phpPath composer.phar update
+    } elseif ($composerExec -like "*.bat") {
+        # XAMPP composer.bat
+        & $composerExec update
     } else {
         & composer update
     }

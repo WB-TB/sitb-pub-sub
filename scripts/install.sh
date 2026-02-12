@@ -210,6 +210,9 @@ if [ "$NO_GIT" -eq 1 ]; then
     rm -rf "$TEMP_DIR"
     echo "   -> Temporary files cleaned up"
 else
+    # Menambahkan safe.directory untuk Git
+    git config --global --add safe.directory "$TARGET_DIR"
+
     # Clone or update the repository
     if [ -d "$TARGET_DIR/.git" ]; then
         # Repository exists, pull latest changes
@@ -231,9 +234,6 @@ else
             echo "   -> Please remove it or move it before running this script"
             exit 1
         fi
-
-        # Menambahkan safe.directory untuk Git
-        git config --global --add safe.directory "$TARGET_DIR"
 
         # Clone the repository
         git clone "$REPO_URL" "$TARGET_DIR"

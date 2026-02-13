@@ -80,26 +80,27 @@ Dibutuhkan 2 tabel sementara untuk memastikan pesan yang masuk tidak diproses be
 **A. Buat Tabel `ckg_pubsub_incoming`**
 ```sql
 CREATE TABLE `ckg_pubsub_incoming` (
-  `id` varchar(100) NOT NULL COMMENT 'Message ID from Pub/Sub',
-  `data` TEXT NOT NULL COMMENT 'Message data in JSON format',
+  `id` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Message ID from Pub/Sub',
+  `data` json NOT NULL COMMENT 'Message data in JSON format',
+  `attributes` text COLLATE utf8mb4_unicode_ci,
   `received_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Message received timestamp',
   `processed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Message received timestamp',
   PRIMARY KEY (`id`),
   KEY `idx_received_at` (`received_at`),
   KEY `idx_processed_at` (`processed_at`)
-) ENGINE=InnoDB COMMENT='Pub/Sub Incoming Messages Table';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Pub/Sub Incoming Messages Table';
 ```
 
 **B. Buat Tabel `ckg_pubsub_outgoing`**
 ```sql
 CREATE TABLE `ckg_pubsub_outgoing` (
-  `terduga_id` varchar(100) NOT NULL COMMENT 'Message ID from Pub/Sub',
+  `terduga_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Message ID from Pub/Sub',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Record create timestamp',
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Record update timestamp',
-  PRIMARY KEY (`id`),
+  PRIMARY KEY (`terduga_id`),
   KEY `idx_created_at` (`created_at`),
   KEY `idx_updated_at` (`updated_at`)
-) ENGINE=InnoDB COMMENT='API Outgoing Messages Table';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='API Outgoing Messages Table';
 ```
 
 > Anda juga bisa menggunakan file **[sql/pubsub_temp.sql](./sql/pubsub_temp.sql)** untuk dieksekusi di Database Server

@@ -143,7 +143,7 @@ class Consumer extends Client
             return 0;
         }
 
-        $this->logger->debug("Processing " . count($messages) . " messages... " . json_encode($messages, JSON_PRETTY_PRINT));
+        $this->logger->debug("Processing " . count($messages) . " messages... ");
 
         $subscription = $this->pubSubClient->subscription($this->subscriptionName);
         $rawMessages = [];
@@ -153,7 +153,7 @@ class Consumer extends Client
         }
 
         // Inspeksi message sebelum diproses
-        $this->logger->debug("Inpect Messages: " . print_r($rawMessages, true));
+        // $this->logger->debug("Inpect Messages: " . print_r($rawMessages, true));
         $valid = $inspector($rawMessages);
 
         foreach ($valid as $messageId => $messageWrapper) {

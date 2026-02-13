@@ -105,9 +105,9 @@ abstract class DbObject {
      */
     protected function convertHasilDiagnosis($value, $default = null): ?string
     {
-        if (strpos($value, 'SO' !== false)) {
+        if ($value !== null && strpos($value, 'SO') !== false) {
             return 'TBC SO';
-        } elseif (strpos($value, 'RO' !== false)) {
+        } elseif ($value !== null && strpos($value, 'RO') !== false) {
             return 'TBC RO';
         }
         
@@ -116,15 +116,15 @@ abstract class DbObject {
 
     /**
      * Convert Diagnosis result type
-     * 
+     *
      * @param string|null $value
      * @return int|null
      */
     protected function convertTipeHasilDiagnosis($value, $default = null): ?string
     {
-        if (stripos($value, 'bakteriologi' !== false)) {
+        if ($value !== null && stripos($value, 'bakteriologi') !== false) {
             return 'bakteriologis';
-        } elseif (stripos($value, 'klinis' !== false)) {
+        } elseif ($value !== null && stripos($value, 'klinis') !== false) {
             return 'klinis';
         }
         

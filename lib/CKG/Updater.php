@@ -229,10 +229,10 @@ class Updater
             'Content-Type: application/json'
         ]);
 
-        if ($response['status_code'] == 200 || $response['status_code'] == 201) {
+        if ($response['http_code'] == 200 || $response['http_code'] == 201) {
             $this->logger->info("Successfully sent status pasien via API Client. Items count: " . count($payload));
         } else {
-            $this->logger->error("Failed to send status pasien via API Client. Status Code: " . $response['status_code'] . " Response: " . ($response['body'] ? $response['body'] : 'No response body'));
+            $this->logger->error("Failed to send status pasien via API Client. Status Code: " . $response['http_code'] . " Response: " . ($response['body'] ? $response['body'] : 'No response body') . print_r($response, true));
         }
     }
 

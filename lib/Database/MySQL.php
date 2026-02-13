@@ -24,6 +24,9 @@ class MySQL {
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
+                PDO::ATTR_PERSISTENT => false,
+                PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4",
+                PDO::ATTR_TIMEOUT => 30,
             ];
             
             $this->connection = new PDO($dsn, $dbConfig['username'], $dbConfig['password'], $options);
@@ -31,6 +34,26 @@ class MySQL {
         } catch (PDOException $e) {
             throw new Exception("Database connection failed: " . $e->getMessage());
         }
+    }
+    
+    /**
+     * Check if connection is alive and reconnect if needed
+     */
+    private function ensureConnection() {
+        try {
+            // Try to execute a simple query to check connection
+            $this->connection->query("SELECT 1");
+        } catch (PDOException $e) {
+            // Connection is lost, reconnect
+            $this->connect();
+        }
+    }
+    
+    /**
+     * Check if the exception is a "server has gone away" error
+     */
+    private function isServerGoneAway(PDOException $e): bool {
+        return $e->errorInfo[1] === 2006;
     }
     
     /**
@@ -47,10 +70,21 @@ class MySQL {
      * @return \PDOStatement
      */
     public function prepare($sql) {
-        try {
-            return $this->connection->prepare($sql);
-        } catch (PDOException $e) {
-            throw new Exception("Prepare statement failed: " . $e->getMessage());
+        $retryCount = 0;
+        $maxRetries = 3;
+        
+        while ($retryCount < $maxRetries) {
+            try {
+                $this->ensureConnection();
+                return $this->connection->prepare($sql);
+            } catch (PDOException $e) {
+                if ($this->isServerGoneAway($e) && $retryCount < $maxRetries - 1) {
+                    $retryCount++;
+                    $this->connect();
+                    continue;
+                }
+                throw new Exception("Prepare statement failed: " . $e->getMessage());
+            }
         }
     }
     
@@ -61,12 +95,23 @@ class MySQL {
      * @return \PDOStatement
      */
     public function query($sql, $params = []) {
-        try {
-            $stmt = $this->connection->prepare($sql);
-            $stmt->execute($params);
-            return $stmt;
-        } catch (PDOException $e) {
-            throw new Exception("Query failed: " . $e->getMessage());
+        $retryCount = 0;
+        $maxRetries = 3;
+        
+        while ($retryCount < $maxRetries) {
+            try {
+                $this->ensureConnection();
+                $stmt = $this->connection->prepare($sql);
+                $stmt->execute($params);
+                return $stmt;
+            } catch (PDOException $e) {
+                if ($this->isServerGoneAway($e) && $retryCount < $maxRetries - 1) {
+                    $retryCount++;
+                    $this->connect();
+                    continue;
+                }
+                throw new Exception("Query failed: " . $e->getMessage());
+            }
         }
     }
     
@@ -88,7 +133,7 @@ class MySQL {
         $sql = "INSERT INTO {$table} ({$columns}) VALUES ({$placeholders})";
         
         $this->query($sql, $values);
-        return $this->connection->lastInsertId();
+        return $this->lastInsertId();
     }
     
     public function update($table, $data, $where, $whereParams = []) {
@@ -114,14 +159,17 @@ class MySQL {
     }
     
     public function beginTransaction() {
+        $this->ensureConnection();
         return $this->connection->beginTransaction();
     }
     
     public function commit() {
+        $this->ensureConnection();
         return $this->connection->commit();
     }
     
     public function rollback() {
+        $this->ensureConnection();
         return $this->connection->rollback();
     }
     
@@ -130,10 +178,21 @@ class MySQL {
     }
     
     public function lastInsertId() {
-        try {
-            return $this->connection->lastInsertId();
-        } catch (PDOException $e) {
-            throw new Exception("Failed to get last insert ID: " . $e->getMessage());
+        $retryCount = 0;
+        $maxRetries = 3;
+        
+        while ($retryCount < $maxRetries) {
+            try {
+                $this->ensureConnection();
+                return $this->connection->lastInsertId();
+            } catch (PDOException $e) {
+                if ($this->isServerGoneAway($e) && $retryCount < $maxRetries - 1) {
+                    $retryCount++;
+                    $this->connect();
+                    continue;
+                }
+                throw new Exception("Failed to get last insert ID: " . $e->getMessage());
+            }
         }
     }
 }

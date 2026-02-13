@@ -38,9 +38,9 @@ class StatusPasien extends TbObject
     public function toArray(): array
     {
         return [
-            'terduga_id' => $this->terduga_id + '',
+            'terduga_id' => (string) $this->terduga_id,
             'pasien_nik' => $this->pasien_nik,
-            'pasien_tb_id' => $this->pasien_tb_id + '',
+            'pasien_tb_id' => (string) $this->pasien_tb_id,
             'jenis_pasien' => $this->jenis_pasien,
             'jenis_pasien_tipe' => $this->jenis_pasien_tipe,
             'diagnosa_lab_hasil_tcm' => $this->diagnosa_lab_hasil_tcm,
@@ -54,11 +54,11 @@ class StatusPasien extends TbObject
     }
 
     public function fromDbRecord(array $data) {
-        $this->terduga_id = isset($data['id_reg_terduga']) ? $data['id_reg_terduga'] + '' : null;
+        $this->terduga_id = isset($data['id_reg_terduga']) ? (string) $data['id_reg_terduga'] : null;
         $this->pasien_nik = isset($data['nik']) ? $data['nik'] : null;
-        $this->pasien_tb_id = isset($data['person_id']) ? $data['person_id'] + '' : null;
-        $this->jenis_pasien = $this->convertHasilDiagnosis($data['jenis_pasien']);
-        $this->jenis_pasien_tipe =  $this->convertTipeHasilDiagnosis($data['tipe_diagnosis_tbc']);
+        $this->pasien_tb_id = isset($data['person_id']) ? (string) $data['person_id'] : null;
+        $this->jenis_pasien = isset($data['jenis_pasien']) ? $this->convertHasilDiagnosis($data['jenis_pasien']) : null;
+        $this->jenis_pasien_tipe = isset($data['tipe_diagnosis_tbc']) ? $this->convertTipeHasilDiagnosis($data['tipe_diagnosis_tbc']) : null;
         $this->diagnosa_lab_hasil_tcm = isset($data['hasil_tcm']) ? $data['hasil_tcm'] : null;
         $this->diagnosa_lab_hasil_bta = isset($data['hasil_biakan']) ? $data['hasil_biakan'] : null;
         $this->diagnosa_hasil_radiologi = isset($data['hasil_foto_toraks']) ? $data['hasil_foto_toraks'] : null;

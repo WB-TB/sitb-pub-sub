@@ -246,7 +246,7 @@ class SkriningCKG extends TbObject
 
         if ($ageYear < 15) {
             $return['gejala_1_1_id'] = $this->convertYaTidak($this->gejala_batuk, 'Tidak');
-            if ($this->gejala_batuk = 'Ya')
+            if ($return['gejala_1_1_id'] == '1')
                 $return['gejala_1_1_durasi'] = 15;
 
             $return['gejala_1_3_id'] = $this->convertYaTidak($this->gejala_bb_turun, 'Tidak');
@@ -254,7 +254,7 @@ class SkriningCKG extends TbObject
             $return['gejala_1_5_id'] = $this->convertYaTidak($this->gejala_berkeringat_malam, 'Tidak');
         }else {
             $return['gejala_2_1_id'] = $this->convertYaTidak($this->gejala_batuk, 'Tidak');
-            if ($this->gejala_batuk = 'Ya')
+            if ($return['gejala_2_1_id'] == '1')
                 $return['gejala_2_1_durasi'] = 15;
 
             $return['gejala_2_3_id'] = $this->convertYaTidak($this->gejala_bb_turun, 'Tidak');

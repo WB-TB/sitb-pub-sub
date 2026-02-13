@@ -34,7 +34,14 @@ class MySQL {
             
             // $this->logger->info("Connecting to database: " . $dsn);
             $this->connection = new PDO($dsn, $dbConfig['username'], $dbConfig['password'], $options);
-            // $this->logger->info("Success connect to Database");            
+            // $this->logger->info("Success connect to Database");
+            
+            // Set timezone secara global untuk $this->connection sesuai $dbConfig['timezone']
+            if (!isset($dbConfig['timezone']) || empty($dbConfig['timezone'])) {
+                $dbConfig['timezone'] = '+07:00'; // Default timezone WIB [UTC+07]
+            }
+
+            $this->connection->exec("SET time_zone = '{$dbConfig['timezone']}'");
         } catch (PDOException $e) {
             throw new Exception("Database connection failed: " . $e->getMessage());
         }

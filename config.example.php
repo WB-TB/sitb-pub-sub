@@ -45,7 +45,7 @@ return [
     'api' => [
         'base_url' => 'https://api.sspkg.appgo.my.id/api', // <-- BUTUH DIUPDATE
         'timeout' => 60, // seconds
-        'api_key' => 'your_api_key_here',                           // <-- BUTUH DIUPDATE
+        'api_key' => 'ovI6zk4FcnU9e2h0',                           // <-- BUTUH DIUPDATE
         'api_header' => 'X-API-Key:',
         'batch_size' => 100
     ],
@@ -54,7 +54,8 @@ return [
         'port' => 3306,                                             // <-- BUTUH DIUPDATE
         'username' => 'xtb',                                        // <-- BUTUH DIUPDATE
         'password' => 'xtb',                                        // <-- BUTUH DIUPDATE
-        'database_name' => 'xtb'                                    // <-- BUTUH DIUPDATE
+        'database_name' => 'xtb',                                   // <-- BUTUH DIUPDATE
+        'timezone' => '+07:00'                                      // <-- Timezone untuk kolom datetime (UTC+07 = WIB)
     ],
     'logging' => [
         'level' => 'DEBUG', // DEBUG, INFO, WARNING, ERROR

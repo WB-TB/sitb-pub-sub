@@ -143,7 +143,7 @@ class Consumer extends Client
             return 0;
         }
 
-        $this->logger->debug("Processing " . count($messages) . " messages...");
+        $this->logger->debug("Processing " . count($messages) . " messages... " . json_encode($messages, JSON_PRETTY_PRINT));
 
         $subscription = $this->pubSubClient->subscription($this->subscriptionName);
         $rawMessages = [];

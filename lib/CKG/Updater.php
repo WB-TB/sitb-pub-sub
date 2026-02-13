@@ -109,7 +109,7 @@ class Updater
         // Proses SO
         $statusSo = $this->laporan->getData(LapTbc03::TYPE_SO, $start, $end, false, $limit);
         foreach ($statusSo as $item) {
-            $item['diagnosis'] = 'TBC SO';
+            $item['jenis_pasien'] = 'TBC SO';
             $statusPasien = new StatusPasien();
             $statusPasien->fromDbRecord($item);
             $status[] = $statusPasien;
@@ -119,7 +119,7 @@ class Updater
         // Proses RO
         $statusRo = $this->laporan->getData(LapTbc03::TYPE_RO, $start, $end, false, $limit);
         foreach ($statusRo as $item) {
-            $item['diagnosis'] = 'TBC RO';
+            $item['jenis_pasien'] = 'TBC RO';
             $statusPasien = new StatusPasien();
             $statusPasien->fromDbRecord($item);
             $status[] = $statusPasien;
@@ -131,7 +131,7 @@ class Updater
         //     'terduga_id' => '123',
         //     'pasien_nik' => '3403011703850005',
         //     'pasien_tb_id' => '123-ab',
-        //     'status_diagnosa' => 'TBCSO',
+        //     'jenis_pasien' => 'TBCSO',
         //     'diagnosa_lab_metode' => 'TCM',
         //     'diagnosa_lab_hasil' => 'rif-sen',
         //     'tanggal_mulai_pengobatan' => null,

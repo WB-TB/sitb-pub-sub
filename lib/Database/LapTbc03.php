@@ -37,7 +37,7 @@ class LapTbc03
      * @param string $end datetime sampai
      * @return array|int
      */
-    public function getData(int $type, string $start, string $end, bool $count = false, int $limit = 1000): array|int
+    public function getData(int $type, string $start, string $end, bool $count = false, int $limit = 1000)
     {
         $tableName = $type == self::TYPE_RO ? $this->tableNameRo : $this->tableNameSo;
         if ($count) {

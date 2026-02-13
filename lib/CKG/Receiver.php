@@ -52,7 +52,7 @@ class Receiver
                     $valid[$messageId] = [$skrining, $message];
                 }
 
-                // $this->logNewMessage($messageId, $data, $message->attributes());
+                $this->logNewMessage($messageId, $data, $message->attributes());
             } catch (\Exception $e) {
                 $this->logger->warning("Error preparing message {$messageId}: " . $e->getMessage());
             }
@@ -102,6 +102,7 @@ class Receiver
         $incomingTable = $this->incomingTable;
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
         $query = "SELECT id FROM {$incomingTable} WHERE id IN ({$placeholders})";
+        $this->logger->debug("Check Incomming Message Ids: {$query}");
         $stmt = $this->db->prepare($query);
         $stmt->execute($ids);
         $result = $stmt->fetchAll(\PDO::FETCH_COLUMN);

@@ -153,7 +153,7 @@ class Consumer extends Client
         }
 
         // Inspeksi message sebelum diproses
-        // $this->logger->debug("Inpect Messages: " . print_r($rawMessages, true));
+        $this->logger->debug("Inpect Messages: " . print_r($rawMessages, true));
         $valid = $inspector($rawMessages);
 
         foreach ($valid as $messageId => $messageWrapper) {

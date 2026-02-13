@@ -52,7 +52,7 @@ class Receiver
                     $valid[$messageId] = [$skrining, $message];
                 }
 
-                $this->logNewMessage($messageId, $data, $message->attributes());
+                // $this->logNewMessage($messageId, $data, $message->attributes());
             } catch (\Exception $e) {
                 $this->logger->warning("Error preparing message {$messageId}: " . $e->getMessage());
             }
@@ -71,9 +71,10 @@ class Receiver
                 $ackId = $message->ackId();
                 $this->logger->info("Received valid CKG SkriningCKG object {$messageId} - {$ackId}. {$skrining}");
                 
-                echo "Received message at " . date('Y-m-d H:i:s') . ":\n";
-                echo "  Data: {$data}\n";
-                echo "  Attributes: " . json_encode($attributes) . "\n";
+                // echo "Received message at " . date('Y-m-d H:i:s') . ":\n";
+                // echo "  Data: {$data}\n";
+                // echo "  Attributes: " . json_encode($attributes) . "\n";
+                $this->logger->debug("Received message at " . date('Y-m-d H:i:s') . ":\nData {$data}\n  Attributes: " . json_encode($attributes, JSON_PRETTY_PRINT));
 
                 $items = $skrining->getData();
                 foreach ($items as $item) {

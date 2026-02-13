@@ -46,6 +46,7 @@ class MySQL {
     private function ensureConnection() {
         try {
             // Try to execute a simple query to check connection
+            $this->logger->debug("Checking connection: SELECT 1;");
             $this->connection->query("SELECT 1");
         } catch (PDOException $e) {
             // Connection is lost, reconnect

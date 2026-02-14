@@ -65,41 +65,7 @@ sudo /opt/sitb-ckg/scripts/install.sh update --no-git=yes
 - Unduh file JSON kredensial
 - Letakkan file di: `/opt/sitb-ckg/credentials.json`
 
-### 3. Siapkan database untuk penyimpanan sementara pesan Pub/Sub
-#### 3.1 Menerima Pesan masuk dari Pub/Sub (sebagai Consumer)
-Dibutuhkan 2 tabel sementara untuk memastikan pesan yang masuk tidak diproses berkali-kali. 
-
-> Pesan di dalam tabel akan di **hapus setiap hari** (menggunakan CronJob/Scheduller bawaan dari service ini) untuk mencegah penumpukan yang tidak diperlukan
-
-**A. Buat Tabel `ckg_pubsub_incoming`**
-```sql
-CREATE TABLE `ckg_pubsub_incoming` (
-  `id` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Message ID from Pub/Sub',
-  `data` json NOT NULL COMMENT 'Message data in JSON format',
-  `attributes` text COLLATE utf8mb4_unicode_ci,
-  `received_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Message received timestamp',
-  `processed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Message received timestamp',
-  PRIMARY KEY (`id`),
-  KEY `idx_received_at` (`received_at`),
-  KEY `idx_processed_at` (`processed_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Pub/Sub Incoming Messages Table';
-```
-
-**B. Buat Tabel `ckg_pubsub_outgoing`**
-```sql
-CREATE TABLE `ckg_pubsub_outgoing` (
-  `terduga_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Message ID from Pub/Sub',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Record create timestamp',
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Record update timestamp',
-  PRIMARY KEY (`terduga_id`),
-  KEY `idx_created_at` (`created_at`),
-  KEY `idx_updated_at` (`updated_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='API Outgoing Messages Table';
-```
-
-> Anda juga bisa menggunakan file **[sql/pubsub_temp.sql](./sql/pubsub_temp.sql)** untuk dieksekusi di Database Server
-
-#### 3.2 Mengupdate Table Skrining SITB
+### 3. Mengupdate Table Skrining SITB
 Menambahkan field `ckg_id` di tabel `ta_skrining` SITB
 
 ```sql

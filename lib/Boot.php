@@ -116,6 +116,8 @@ class Boot {
         self::checkInitialized();
         if (self::$db === null) {
             self::$db = new \Database\MySQL(self::$config);
+            // Check database requirements after connection is established
+            self::checkRequirements();
         }
         return self::$db;
     }
@@ -187,6 +189,47 @@ class Boot {
                     }
                 }
             }
+        }
+    }
+
+    public static function checkRequirements() {
+        try {
+            $db = self::getDatabase();
+            $config = self::getConfig();
+            $tableName = $config['ckg']['table_skrining'];
+            
+            // Check if the 'ckg_id' column exists in the 'ta_skrining' table
+            $query = "SELECT COUNT(*) as column_exists 
+                     FROM INFORMATION_SCHEMA.COLUMNS 
+                     WHERE TABLE_SCHEMA = DATABASE() 
+                     AND TABLE_NAME = ? 
+                     AND COLUMN_NAME = 'ckg_id'";
+            
+            $result = $db->fetchOne($query, [$tableName]);
+            
+            if ($result && isset($result['column_exists']) && $result['column_exists'] == 0) {
+                // coba tambahkan sendiri kolom ckg_id jika belum ada
+                try {
+                    $alterQuery = "ALTER TABLE $tableName ADD COLUMN ckg_id varchar(16) DEFAULT NULL";
+                    $db->query($alterQuery, []);
+                    
+                    if (isset(self::$logger)) {
+                        self::$logger->info("Successfully added 'ckg_id' column to table '$tableName' using:\tALTER TABLE $tableName ADD COLUMN ckg_id varchar(16) DEFAULT NULL;");
+                    }
+                } catch (Exception) {
+                    // Silent error - log but don't fail initialization
+                    if (isset(self::$logger)) {
+                        self::$logger->error("Column 'ckg_id' does not exist in table '$tableName'. Please add it manually using:\tALTER TABLE $tableName ADD COLUMN ckg_id varchar(16) DEFAULT NULL;");
+                    }
+                    echo "Error: Column 'ckg_id' does not exist in table '$tableName'.\n\n=======================================\nPlease add it using:\n\tALTER TABLE $tableName ADD COLUMN ckg_id varchar(16) DEFAULT NULL;\n=======================================\n\n";
+                }
+            }
+        } catch (Exception $e) {
+            // Log error but don't fail the initialization
+            if (isset(self::$logger)) {
+                self::$logger->error("Failed to check for 'ckg_id' column: " . $e->getMessage());
+            }
+            echo "Failed to check for 'ckg_id' column: " . $e->getMessage();
         }
     }
 

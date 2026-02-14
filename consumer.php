@@ -15,5 +15,5 @@ echo "Subscription Info:\n";
 print_r($info);
 
 // Start continuous listener
-echo "\n--- Starting continuous listener (press Ctrl+C to stop) ---\n";
+echo "\n--- Starting continuous listener ---\n";
 $consumer->listen([$receiver, 'prepare'], [$receiver, 'listen']);

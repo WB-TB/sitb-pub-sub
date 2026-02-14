@@ -155,7 +155,6 @@ install_or_update() {
             echo " + Creating installation directory: $TARGET_DIR"
             mkdir -p "$TARGET_DIR"
             chown "$USERID:$GROUPID" "$TARGET_DIR"
-            chmod 755 "$TARGET_DIR"
         fi
 
         if [ ! -d "$LOG_DIR" ]; then
@@ -163,7 +162,7 @@ install_or_update() {
             echo " + Creating log directory: $LOG_DIR"
             mkdir -p "$LOG_DIR"
             chown "$USERID:$GROUPID" "$LOG_DIR"
-            chmod 755 "$LOG_DIR"
+            chmod 644 "$LOG_DIR"
         fi
     else # INSTALL_MODE=update
         if [ ! -f "$TARGET_DIR/composer.json" ]; then
@@ -324,7 +323,7 @@ install_or_update() {
         else
             # Repository doesn't exist, clone it
             echo " + Cloning repository from $REPO_URL to $TARGET_DIR..."
-            if [ -d "$TARGET_DIR" ]; then
+            if [ -d "$TARGET_DIR/.git" ]; then
                 echo "   -> Directory $TARGET_DIR exists, use command 'install.sh update' instead"
                 exit 1
             fi
@@ -373,9 +372,10 @@ setup_permission() {
     fi
 
     chown -R $USERID:$GROUPID "$TARGET_DIR"
-    chmod -R 755 "$TARGET_DIR"
+    chmod 755 "$TARGET_DIR/scripts/install.sh"
+    chmod 755 "$TARGET_DIR/scripts/consumer/run-consumer.sh"
     chown -R $USERID:$GROUPID "$LOG_DIR"
-    chmod -R 755 "$LOG_DIR"
+    chmod -R 644 "$LOG_DIR"
 }
 
 setup_cronjob() {

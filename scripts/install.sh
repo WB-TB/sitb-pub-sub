@@ -11,6 +11,7 @@ SERVICE_CONSUMER_NAME="ckg-consumer"
 NO_GIT=0
 INSTALL_MODE=$1
 NO_COMPOSER=0
+NEED_UPDATE=1
 USE_COMPOSER=$(which composer)
 USE_GIT=$(which git)
 USE_WGET=$(which wget)
@@ -77,7 +78,7 @@ check_php() {
         exit 1
     fi
 
-    PHPVERSION=$($PHPEXEC -r 'echo PHP_VERSION;')
+    PHPVERSION=$($PHPEXEC -r 'echo PHP_VERSION;' 2>/dev/null)
     echo "Using PHP version: $PHPVERSION"
 
     # Check PHP extensions
@@ -88,7 +89,7 @@ check_php() {
     MISSING_REQUIRED=""
 
     for ext in $REQUIRED_EXTENSIONS; do
-        if $PHPEXEC -r "if (!extension_loaded('$ext')) exit(1);"; then
+        if $PHPEXEC -r "if (!extension_loaded('$ext')) exit(1);" 2>/dev/null; then
             echo "   -> [OK] Required extension '$ext' is installed"
         else
             echo "   -> [ERROR] Required extension '$ext' is NOT installed"
@@ -107,14 +108,10 @@ check_php() {
     # Optional extensions
     OPTIONAL_EXTENSIONS="pcntl"
     for ext in $OPTIONAL_EXTENSIONS; do
-        if $PHPEXEC -r "if (!extension_loaded('$ext')) exit(1);"; then
+        if $PHPEXEC -r "if (!extension_loaded('$ext')) exit(1);" 2>/dev/null; then
             echo "   -> [OK] Optional extension '$ext' is installed"
         else
-            echo "   -> [WARNING] Optional extension '$ext' is NOT installed"
-            echo "   -> This extension is recommended for better functionality."
-            if [ "$ext" = "pcntl" ]; then
-                echo "   -> Without pcntl, graceful shutdown (Ctrl+C) will be disabled."
-            fi
+            echo "   -> [WARNING] Optional extension '$ext' is NOT installed."
         fi
     done
 }
@@ -302,13 +299,28 @@ install_or_update() {
             # echo " + Repository already exists at $TARGET_DIR"
             echo " + Updating repository from $REPO_URL..."
             cd "$TARGET_DIR"
-            git fetch origin
-            git reset --hard origin/main
-            if [ $? -ne 0 ]; then
-                echo "Error: Failed to update repository"
-                exit 1
+            git fetch -q origin main
+            # git reset --hard origin/main
+            # if [ $? -ne 0 ]; then
+            #     echo "Error: Failed to update repository"
+            #     exit 1
+            # fi
+            # Bandingkan posisi lokal dengan remote
+            UPSTREAM='@{u}'
+            LOCAL=$(git rev-parse @)
+            LOCALM=$(git merge-base @ "$UPSTREAM")
+            REMOTE=$(git rev-parse "$UPSTREAM")
+
+            if [ "$LOCAL" = "$REMOTE" ]; then
+                NEED_UPDATE=0
+                echo "   -> Branch is up-to-date."
+            elif [ "$LOCAL" = "$LOCALM" ]; then
+                git pull -q origin main
+                echo "   -> Repository updated successfully"
+            else
+                NEED_UPDATE=0
+                echo "   -> [WARNING] Status branch diverged (ada commit lokal yang belum di-push)."
             fi
-            echo "   -> Repository updated successfully"
         else
             # Repository doesn't exist, clone it
             echo " + Cloning repository from $REPO_URL to $TARGET_DIR..."
@@ -328,12 +340,15 @@ install_or_update() {
         fi
     fi
 
-    echo " + Repository cloned/updated successfully at $TARGET_DIR"
+    if [ $NEED_UPDATE -eq 1 ]; then
+        echo " + Repository cloned/updated successfully at $TARGET_DIR"
+    fi
 }
 
 install_composer() {
-    cd "$TARGET_DIR"
     if [ -n "$USE_COMPOSER" -a $NO_COMPOSER -ne 1 ]; then
+        cd "$TARGET_DIR"
+
         # Pastikan permission sudah diatur
         setup_permission
 
@@ -472,14 +487,6 @@ setup_service() {
                 echo "Repository at $TARGET_DIR has been updated"
                 echo "Consumer service has been updated and restarted"
             fi
-
-            echo ""
-            echo "To update the repository in the future, run:"
-            if [ "$NO_GIT" -eq 1 ]; then
-                echo "  sudo $TARGET_DIR/scripts/install.sh update"
-            else
-                echo "  cd $TARGET_DIR && git pull"
-            fi
         else
             echo ""
             if [ "$INSTALL_MODE" = "fresh" ]; then
@@ -575,11 +582,7 @@ print_instructions() {
     echo " ----------------------------------------"
     echo ""
     echo "To update the repository in the future, run:"
-    if [ "$NO_GIT" -eq 1 ]; then
-        echo "  sudo $TARGET_DIR/scripts/install.sh update"
-    else
-        echo "  cd $TARGET_DIR && git pull"
-    fi
+    echo "  sudo $TARGET_DIR/scripts/install.sh update"
     echo ""
     echo "You can manage the services with:"
     echo "  Consumer Service:"
@@ -587,7 +590,7 @@ print_instructions() {
     echo "    Stop service:       sudo service ckg-consumer stop"
     echo "    Restart service:    sudo service ckg-consumer restart"
     echo "    Check status:       sudo service ckg-consumer status"
-    echo "    View logs:          sudo tail -f $LOG_DIR/ckg-consumer.log"
+    echo "    View logs:          sudo tail -f $LOG_DIR/consumer.log"
     echo "  Producer Services (Cronjobs):"
     echo "    Schedule:           /etc/cron.d/ckg-producer"
     echo "    Runs:               Daily at 2:00 AM"
@@ -665,9 +668,12 @@ check_params "$@"
 check_php
 check_composer
 install_or_update
-install_composer
-setup_permission
-setup_service
-print_instructions
 
+if [ $NEED_UPDATE -eq 1 ]; then
+    install_composer
+    setup_permission
+    setup_service
+fi
+
+print_instructions
 exit 0

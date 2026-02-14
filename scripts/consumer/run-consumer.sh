@@ -4,7 +4,7 @@
 # Detects and uses the PHP executable specified in $PHPEXEC
 TARGET_DIR="/opt/sitb-ckg"
 LOG_DIR="/var/log/sitb-ckg"
-LOGFILE="$LOG_DIR/ckg-consumer.log"
+LOGFILE="$LOG_DIR/consumer.log"
 PHPEXEC=$(which php)
 
 if [ -z "$PHPEXEC" ]; then

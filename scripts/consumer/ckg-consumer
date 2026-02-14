@@ -31,7 +31,7 @@ TARGET_DIR="/opt/sitb-ckg"
 LOG_DIR="/var/log/sitb-ckg"
 CONSUMER_SCRIPT="$TARGET_DIR/scripts/consumer/run-consumer.sh"
 PIDFILE="/var/run/${NAME}.pid"
-LOGFILE="$LOG_DIR/${NAME}.log"
+LOGFILE="$LOG_DIR/consumer.log"
 
 # Check if consumer script exists
 if [ ! -f "$CONSUMER_SCRIPT" ]; then

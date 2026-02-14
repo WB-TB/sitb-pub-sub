@@ -216,7 +216,7 @@ class Boot {
                     if (isset(self::$logger)) {
                         self::$logger->info("Successfully added 'ckg_id' column to table '$tableName' using:\tALTER TABLE $tableName ADD COLUMN ckg_id varchar(16) DEFAULT NULL;");
                     }
-                } catch (Exception) {
+                } catch (Exception $e) {
                     // Silent error - log but don't fail initialization
                     if (isset(self::$logger)) {
                         self::$logger->error("Column 'ckg_id' does not exist in table '$tableName'. Please add it manually using:\tALTER TABLE $tableName ADD COLUMN ckg_id varchar(16) DEFAULT NULL;");

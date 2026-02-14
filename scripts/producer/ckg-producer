@@ -88,7 +88,7 @@ fi
 # Start the producer in background with service type argument
 CMD="php -f $PRODUCER_SCRIPT - --mode=$SERVICE_TYPE"
 echo "Run: $CMD"
-nohup $CMD 2>&1 &
+nohup $CMD >/dev/null 2>&1 &
 pid=$!
 
 # Save PID

@@ -1,6 +1,8 @@
 <?php
 namespace PubSub;
 
+use Exception;
+
 class Consumer extends Client
 {
     private $maxMessagesPerPull;
@@ -87,26 +89,16 @@ class Consumer extends Client
      */
     public function acknowledge($messages)
     {
-        for ($attempt = 1; $attempt <= $this->retryCount; $attempt++) {
+        $ok = false;
+        $subscription = $this->pubSubClient->subscription($this->subscriptionName);
+        foreach ($messages as $message) {
             try {
-                $subscription = $this->pubSubClient->subscription($this->subscriptionName);
-                $subscription->acknowledgeBatch($messages);
-                $this->logger->debug("Acknowledged " . count($messages) . " messages");
-                return true;
-
-            } catch (\Exception $e) {
-                $this->logger->warning("Acknowledge attempt {$attempt} failed: " . $e->getMessage());
-                
-                if ($attempt < $this->retryCount) {
-                    sleep($this->retryDelay);
-                } else {
-                    $this->logger->error("Failed to acknowledge messages after {$this->retryCount} attempts");
-                    return false;
-                }
-            }
+                $subscription->acknowledge($message);
+                $ok = true;
+            } catch (Exception $e) { }
         }
-        
-        return false;
+
+        return $ok;
     }
 
     /**
@@ -145,7 +137,7 @@ class Consumer extends Client
 
         $this->logger->debug("Processing " . count($messages) . " messages... ");
 
-        $subscription = $this->pubSubClient->subscription($this->subscriptionName);
+        // $subscription = $this->pubSubClient->subscription($this->subscriptionName);
         $rawMessages = [];
         $acks = [];
         foreach ($messages as $message) {
@@ -189,7 +181,6 @@ class Consumer extends Client
 
         // Acknowledge successfully processed messages in batch
         if ($processedCount > 0) {
-            // $success = $this->acknowledge(array_slice($messages, 0, $processedCount));
             $validMessages = array_filter($messages, function($message) use ($acks) {
                 $messageId = $message->id();
                 return isset($acks[$messageId]) && $acks[$messageId];

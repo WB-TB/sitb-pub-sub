@@ -16,7 +16,8 @@ return [
                 'subscription' => 'projects/dto-ihs-dev/subscriptions/pkg-konsolidator-tb-sub',
                 'message_ordering' => false
             ],
-        ]
+        ],
+        'database' => __DIR__ . '/pubsub.sqlite',
     ],
     'consumer' => [
         'max_messages_per_pull' => 10,

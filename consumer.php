@@ -7,7 +7,7 @@ Boot::init(\PubSub\Consumer::class);
 
 // Create consumer instance
 $consumer = new \PubSub\Consumer(Boot::getConfig());
-$receiver = new \CKG\Receiver(Boot::getDatabase(), Boot::getConfig());
+$receiver = new \CKG\Receiver(Boot::getDatabase(), Boot::getSQLite(), Boot::getConfig());
 
 // Show subscription info
 $info = $consumer->getSubscriptionInfo();

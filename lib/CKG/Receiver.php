@@ -3,6 +3,7 @@
 namespace CKG;
 
 use Database\MySQL;
+use Database\SQLite;
 use Database\TaSkrining;
 use CKG\Format\PubSubObjectWrapper;
 use CKG\Format\SkriningCKG;
@@ -10,19 +11,17 @@ use Monolog\Logger;
 
 class Receiver
 {
-    private MySQL $db;
+    private SQLite $sqlite;
     private $config;
     private Logger $logger;
     private $incomingTable;
-    // private $skriningTable;
     private $skriningModel;
     
-    public function __construct(MySQL $db, array $config) {
-        $this->db = $db;
+    public function __construct(MySQL $db, SQLite $sqlite, array $config) {
+        $this->sqlite = $sqlite;
         $this->config = $config;
         $this->logger = \Boot::getLogger();
         $this->incomingTable = $this->config['ckg']['table_incoming'] ? $this->config['ckg']['table_incoming'] : 'ckg_pubsub_incoming';
-        // $this->skriningTable = $this->config['ckg']['table_skrining'] ? $this->config['ckg']['table_skrining'] : 'skrining_tb';
         $this->skriningModel = new TaSkrining($db, $config);
     }
 
@@ -103,7 +102,7 @@ class Receiver
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
         $query = "SELECT id FROM {$incomingTable} WHERE id IN ({$placeholders})";
         $this->logger->debug("Check Incomming Message Ids: {$query}");
-        $stmt = $this->db->prepare($query);
+        $stmt = $this->sqlite->prepare($query);
         $stmt->execute($ids);
         $result = $stmt->fetchAll(\PDO::FETCH_COLUMN);
 
@@ -138,7 +137,7 @@ class Receiver
         $incomingTable = $this->incomingTable;
         $placeholders = implode(',', array_fill(0, count($exists), '?'));
         $query = "SELECT ckg_id, id FROM {$incomingTable} WHERE ckg_id IN ({$placeholders})";
-        $stmt = $this->db->prepare($query);
+        $stmt = $this->sqlite->prepare($query);
         $stmt->execute($exists);
         $result = $stmt->fetchAll(\PDO::FETCH_KEY_PAIR);
 
@@ -148,8 +147,8 @@ class Receiver
     private function logNewMessage($messageId, $data, $attributes) {
         $this->logger->debug("Logging message {$messageId} to database.");
         $incomingTable = $this->incomingTable;
-        $query = "INSERT INTO {$incomingTable} (id, data, attributes, received_at) VALUES (?, ?, ?, NOW())";
-        $stmt = $this->db->prepare($query);
+        $query = "INSERT INTO {$incomingTable} (id, data, attributes, received_at) VALUES (?, ?, ?, datetime('now'))";
+        $stmt = $this->sqlite->prepare($query);
         $stmt->execute([
             $messageId,
             json_encode($data),
@@ -158,43 +157,12 @@ class Receiver
     }
 
     private function saveToDatabase(SkriningCKG $skrining) {
-        // $data = $skrining->toDbRecord();
-        // $skriningTable = $this->skriningTable;
-
         list($skriningId, $update) = $this->skriningModel->save($skrining);
         if ($skriningId) {
             $incomingTable = $this->incomingTable;
-            $query = "UPDATE {$incomingTable} SET processed_at = NOW() WHERE id = ?";
-            $stmt2 = $this->db->prepare($query);
+            $query = "UPDATE {$incomingTable} SET processed_at = datetime('now') WHERE id = ?";
+            $stmt2 = $this->sqlite->prepare($query);
             $stmt2->execute([$skrining->pasien_ckg_id]);
         }
-        // Jika skriningId tidak null, berarti ini update
-        /*if ($skriningId) {
-            $placeholders = implode(', ', array_map(fn($key) => "{$key} = ?", array_keys($data)));
-            $query = "UPDATE {$skriningTable} SET {$placeholders}, updated_at = NOW() WHERE id = ?";
-            $params = array_merge(array_values($data), $skriningId);
-
-            $stmt = $this->db->prepare($query);
-            $stmt->execute($params);
-            
-            $this->logger->debug("Update Skrining with ID: {$skriningId}");
-        } else {
-            $keyPlaceholders = implode(', ', array_keys($data));
-            $valuePlaceholders = implode(', ', array_fill(0, count($data), '?'));
-            \Boot::getLogger()->debug("INSERT DB $skriningTable\n(" . $keyPlaceholders . ") VALUES\n(" . implode(', ', array_values($data)) . ")");
-            $query = "INSERT INTO {$skriningTable} ({$keyPlaceholders}) VALUES ({$valuePlaceholders})";
-            $params = array_values($data);
-
-            $stmt = $this->db->prepare($query);
-            $stmt->execute($params);
-            $skriningId = $this->db->lastInsertId();
-
-            $incomingTable = $this->incomingTable;
-            $query2 = "INSERT INTO {$incomingTable} (id, ckg_id, processed_at) VALUES (?, ?, NOW())";
-            $stmt2 = $this->db->prepare($query2);
-            $stmt2->execute([$skrining->pasien_ckg_id, $skrining->pasien_ckg_id]);
-
-            $this->logger->debug("New Skrining saved with ID: {$skriningId}");
-        }*/
     }
 }

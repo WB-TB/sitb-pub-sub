@@ -3,6 +3,7 @@
 namespace CKG;
 
 use Database\MySQL;
+use Database\SQLite;
 use Database\LapTbc03;
 use PubSub\Producer;
 use CKG\Format\PubSubObjectWrapper;
@@ -12,7 +13,7 @@ use Api\Client as ApiClient;
 
 class Updater
 {
-    private MySQL $db;
+    private SQLite $sqlite;
     private array $config;
     private Logger $logger;
     private Producer $producer;
@@ -20,8 +21,8 @@ class Updater
     private $incomingTable;
     private LapTbc03 $laporan;
 
-    public function __construct(MySQL $db, array $config) {
-        $this->db = $db;
+    public function __construct(MySQL $db, SQLite $sqlite, array $config) {
+        $this->sqlite = $sqlite;
         $this->config = $config;
         $this->logger = \Boot::getLogger();
         $this->outgoingTable = $this->config['ckg']['table_outgoing'] ? $this->config['ckg']['table_outgoing'] : 'ckg_pubsub_outgoing';
@@ -146,7 +147,7 @@ class Updater
         try {
             $outgoingTable = $this->outgoingTable;
             $sql = "SELECT MAX(created_at) as last_timestamp FROM {$outgoingTable}";
-            $result = $this->db->fetchOne($sql);
+            $result = $this->sqlite->fetchOne($sql);
             
             return $result['last_timestamp'] ? $result['last_timestamp'] : null;
         } catch (\Exception $e) {
@@ -245,8 +246,8 @@ class Updater
         $ids = array_map(fn($item) => $item->terduga_id, $data);
         $existing = $this->getExistingOutgoing($ids);
         $outgoingTable = $this->outgoingTable;
-        $sqlInsert = "INSERT INTO {$outgoingTable} (terduga_id, updated_at) VALUES (?, NOW())";
-        $sqlUpdate = "UPDATE {$outgoingTable} SET updated_at = NOW() WHERE terduga_id = ?";
+        $sqlInsert = "INSERT INTO {$outgoingTable} (terduga_id, updated_at) VALUES (?, datetime('now'))";
+        $sqlUpdate = "UPDATE {$outgoingTable} SET updated_at = datetime('now') WHERE terduga_id = ?";
 
         foreach ($data as $statusPasien) {
             try {
@@ -255,10 +256,10 @@ class Updater
                 ];
                 if (in_array($statusPasien->terduga_id, $existing)) {
                     // Update existing record
-                    $this->db->query($sqlUpdate, $params);
+                    $this->sqlite->query($sqlUpdate, $params);
                 } else {
                     // Insert new record
-                    $this->db->query($sqlInsert, $params);
+                    $this->sqlite->query($sqlInsert, $params);
                 }
             } catch (\Exception $e) {
                 $this->logger->error("Failed to save outgoing record: " . $e->getMessage());
@@ -274,7 +275,7 @@ class Updater
         $outgoingTable = $this->outgoingTable;
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
         $query = "SELECT terduga_id FROM {$outgoingTable} WHERE terduga_id IN ({$placeholders})";
-        $stmt = $this->db->prepare($query);
+        $stmt = $this->sqlite->prepare($query);
         $stmt->execute($ids);
         $result = $stmt->fetchAll(\PDO::FETCH_COLUMN);
 
@@ -283,13 +284,13 @@ class Updater
 
     private function removePubSubMessages() {
         $incomingTable = $this->incomingTable;
-        $sqlIncoming = "DELETE FROM {$incomingTable} WHERE processed_at IS NOT NULL AND created_at < NOW() - INTERVAL 1 DAY";
+        $sqlIncoming = "DELETE FROM {$incomingTable} WHERE processed_at IS NOT NULL AND received_at < datetime('now', '-1 day')";
 
         $outgoingTable = $this->outgoingTable;
-        $sqlOutgoing = "DELETE FROM {$outgoingTable} WHERE created_at < NOW() - INTERVAL 1 DAY";
+        $sqlOutgoing = "DELETE FROM {$outgoingTable} WHERE created_at < datetime('now', '-1 day')";
         try {
-            $deleted1 = $this->db->query($sqlIncoming);
-            $deleted2 = $this->db->query($sqlOutgoing);
+            $deleted1 = $this->sqlite->query($sqlIncoming);
+            $deleted2 = $this->sqlite->query($sqlOutgoing);
             $this->logger->info("Removed old PubSub messages from incoming and outgoing table.");
         } catch (\Exception $e) {
             $this->logger->error("Failed to remove old PubSub messages: " . $e->getMessage());

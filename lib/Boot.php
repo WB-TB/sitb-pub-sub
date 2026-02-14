@@ -7,6 +7,7 @@ class Boot {
     private static $initialized = false;
     private static $config;
     private static $db;
+    private static $sqlite;
     private static $logger;
     private static $cliParams = [];
 
@@ -119,6 +120,19 @@ class Boot {
         return self::$db;
     }
 
+    /**
+     * Get SQLite database connection for Pub/Sub
+     *
+     * @return \Database\SQLite
+     */
+    public static function getSQLite() {
+        self::checkInitialized();
+        if (self::$sqlite === null) {
+            self::$sqlite = new \Database\SQLite(self::$config);
+        }
+        return self::$sqlite;
+    }
+
     private static function checkVersion() {
         $requiredPhpVersion = '7.4.0';
         if (version_compare(PHP_VERSION, $requiredPhpVersion, '<')) {
@@ -174,5 +188,18 @@ class Boot {
                 }
             }
         }
+    }
+
+    // Helper function to validate date format (YYYY-MM-DD or YYYY-MM-DD HH:MM:SS)
+    public static function validateDateFormat($date) {
+        if ($date === 'now') {
+            return true;
+        }
+        $pattern = '/^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$/';
+        if (!preg_match($pattern, $date)) {
+            return false;
+        }
+        $parsed = date_parse($date);
+        return $parsed['error_count'] === 0 && $parsed['warning_count'] === 0;
     }
 }

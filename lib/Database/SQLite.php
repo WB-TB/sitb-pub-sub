@@ -38,20 +38,19 @@ class SQLite {
                 PDO::ATTR_PERSISTENT => false,
             ];
             
-            $this->logger->debug("Connecting to SQLite database: " . $this->databasePath);
             $this->connection = new PDO($dsn, null, null, $options);
-            $this->logger->debug("Successfully connected to SQLite database");
+            $this->logger->info("SQLite Success connect to " . $this->databasePath);
             
             // Enable WAL mode for better concurrency (important for multi-process access)
             $this->connection->exec("PRAGMA journal_mode = WAL");
-            $this->logger->debug("WAL mode enabled for SQLite database");
+            $this->logger->info("SQLite WAL mode enabled");
             
             // Enable foreign keys
             $this->connection->exec("PRAGMA foreign_keys = ON");
             // Set busy timeout to 5 seconds
             $this->connection->exec("PRAGMA busy_timeout = 5000");
         } catch (PDOException $e) {
-            throw new Exception("SQLite connection failed: " . $e->getMessage());
+            throw new Exception("SQLite connection failed ({$this->databasePath}): " . $e->getMessage());
         }
     }
     

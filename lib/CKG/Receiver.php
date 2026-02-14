@@ -38,7 +38,6 @@ class Receiver
 
             try {
                 $data = $message->data();
-                // $this->logger->debug("Raw Data: " . print_r($data, true));
                 $skrining = PubSubObjectWrapper::NewConsume(SkriningCKG::class);
                 $skrining->fromJson($data);
                 $this->logger->debug("Parsing Skrining: " . json_encode($skrining, JSON_PRETTY_PRINT));

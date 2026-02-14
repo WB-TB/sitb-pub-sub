@@ -28,13 +28,11 @@ class MySQL {
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
                 PDO::ATTR_PERSISTENT => false,
-                // PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4",
                 PDO::ATTR_TIMEOUT => 30,
             ];
             
-            // $this->logger->info("Connecting to database: " . $dsn);
             $this->connection = new PDO($dsn, $dbConfig['username'], $dbConfig['password'], $options);
-            // $this->logger->info("Success connect to Database");
+            $this->logger->info("MySQL Success connect to " . $dsn);
             
             // Set timezone secara global untuk $this->connection sesuai $dbConfig['timezone']
             if (!isset($dbConfig['timezone']) || empty($dbConfig['timezone'])) {
@@ -42,8 +40,9 @@ class MySQL {
             }
 
             $this->connection->exec("SET time_zone = '{$dbConfig['timezone']}'");
+            $this->logger->info("MySQL set timezone to {$dbConfig['timezone']}");
         } catch (PDOException $e) {
-            throw new Exception("Database connection failed: " . $e->getMessage());
+            throw new Exception("MySQL connection failed: " . $e->getMessage());
         }
     }
     

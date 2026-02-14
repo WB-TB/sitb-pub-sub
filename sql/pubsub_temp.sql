@@ -17,7 +17,7 @@ CREATE TABLE `ckg_pubsub_outgoing` (
   `terduga_id` varchar(100) NOT NULL COMMENT 'Message ID from Pub/Sub',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Record create timestamp',
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Record update timestamp',
-  PRIMARY KEY (`id`),
+  PRIMARY KEY (`terduga_id`),
   KEY `idx_created_at` (`created_at`),
   KEY `idx_updated_at` (`updated_at`)
 ) ENGINE=InnoDB COMMENT='API Outgoing Messages Table';

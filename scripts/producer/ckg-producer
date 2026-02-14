@@ -85,7 +85,7 @@ if is_running; then
 fi
 
 # Start the producer in background with service type argument
-nohup "$PRODUCER_SCRIPT" "- --mode $SERVICE_TYPE" >> "$LOGFILE" 2>&1 &
+nohup "$PRODUCER_SCRIPT" "- --mode=$SERVICE_TYPE" >> "$LOGFILE" 2>&1 &
 local pid=$!
 
 # Save PID

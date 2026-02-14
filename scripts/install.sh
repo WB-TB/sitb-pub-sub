@@ -10,7 +10,7 @@ SERVICE_CONSUMER_FILE="ckg-consumer.service"
 SERVICE_CONSUMER_NAME="ckg-consumer"
 NO_GIT=0
 INSTALL_MODE=$1
-NO_COMPOSER=1
+NO_COMPOSER=0
 USE_COMPOSER=$(which composer)
 USE_GIT=$(which git)
 USE_WGET=$(which wget)
@@ -25,6 +25,41 @@ else
     INSTALL_MODE="fresh"
     echo "Starting installation of SITB-CKG ($INSTALL_MODE)..."
 fi
+
+# Parse CLI parameters
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --no-git=*)
+            NO_GIT_PARAM="${1#*=}"
+            if [ "$NO_GIT_PARAM" = "yes" ]; then
+                NO_GIT=1
+            elif [ "$NO_GIT_PARAM" = "no" ]; then
+                NO_GIT=0
+            else
+                echo "   -> [ERROR] Invalid value for --no-git: '$NO_GIT_PARAM'. Must be 'yes' or 'no'."
+                exit 1
+            fi
+            ;;
+        --no-composer=*)
+            NO_COMPOSER_PARAM="${1#*=}"
+            if [ "$NO_COMPOSER_PARAM" = "yes" ]; then
+                NO_COMPOSER=1
+            elif [ "$NO_COMPOSER_PARAM" = "no" ]; then
+                NO_COMPOSER=0
+            else
+                echo "   -> [ERROR] Invalid value for --no-composer: '$NO_COMPOSER_PARAM'. Must be 'yes' or 'no'."
+                exit 1
+            fi
+            ;;
+        update|fresh)
+            INSTALL_MODE="$1"
+            ;;
+        *)
+            # Skip unknown arguments (they may be processed elsewhere)
+            ;;
+    esac
+    shift
+done
 
 # Check if running as root
 if [ "$(id -u)" -ne 0 ]; then
@@ -42,8 +77,46 @@ fi
 PHPVERSION=$($PHPEXEC -r 'echo PHP_VERSION;')
 echo "Using PHP version: $PHPVERSION"
 
+# Check PHP extensions
+echo " + Checking PHP extensions..."
+
+# Required extensions
+REQUIRED_EXTENSIONS="pdo pdo_mysql pdo_sqlite"
+MISSING_REQUIRED=""
+
+for ext in $REQUIRED_EXTENSIONS; do
+    if $PHPEXEC -r "if (!extension_loaded('$ext')) exit(1);"; then
+        echo "   -> [OK] Required extension '$ext' is installed"
+    else
+        echo "   -> [ERROR] Required extension '$ext' is NOT installed"
+        MISSING_REQUIRED="$MISSING_REQUIRED $ext"
+    fi
+done
+
+if [ -n "$MISSING_REQUIRED" ]; then
+    echo ""
+    echo "   -> [ERROR] Missing required PHP extensions:$MISSING_REQUIRED"
+    echo "   -> Please install the missing extensions and run this script again."
+    echo "   -> Example: sudo apt-get install php-pdo php-mysql php-sqlite3"
+    exit 1
+fi
+
+# Optional extensions
+OPTIONAL_EXTENSIONS="pcntl"
+for ext in $OPTIONAL_EXTENSIONS; do
+    if $PHPEXEC -r "if (!extension_loaded('$ext')) exit(1);"; then
+        echo "   -> [OK] Optional extension '$ext' is installed"
+    else
+        echo "   -> [WARNING] Optional extension '$ext' is NOT installed"
+        echo "   -> This extension is recommended for better functionality."
+        if [ "$ext" = "pcntl" ]; then
+            echo "   -> Without pcntl, graceful shutdown (Ctrl+C) will be disabled."
+        fi
+    fi
+done
+
 # Check if composer is installed
-if [ -z "$USE_COMPOSER" -a $NO_COMPOSER -eq 1 ]; then
+if [ -z "$USE_COMPOSER" -a $NO_COMPOSER -ne 1 ]; then
     echo " + [WARNING]: Composer is not installed. Composer will be installed locally."
     curl -sS https://getcomposer.org/installer | $PHPEXEC
 fi
@@ -417,7 +490,7 @@ EOF
     echo "    Schedule:         /etc/cron.d/ckg-producer"
     echo "    Runs:             Daily at 2:00 AM"
     echo "    View log:         sudo tail -f /var/log/ckg-producer.log"
-    echo "    Manually run:     sudo $TARGET_DIR/scripts/producer/ckg-producer [pubsub|api]"
+    echo "    Manually run:     sudo $TARGET_DIR/scripts/producer/ckg-producer - --mode=[pubsub|api] --start=<date> --end=<date>"
     echo ""
 else
     # Install init.d consumer service

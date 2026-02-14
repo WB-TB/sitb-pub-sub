@@ -2,9 +2,10 @@
 
 # Script to run the consumer application
 # Detects and uses the PHP executable specified in $PHPEXEC
-PHPEXEC=`which php`
+TARGET_DIR="/opt/sitb-ckg"
+LOG_DIR="/var/log/sitb-ckg"
+PHPEXEC=$(which php)
 
-# Check if PHPEXEC is set
 if [ -z "$PHPEXEC" ]; then
     echo "Error: PHP not found."
     exit 1
@@ -17,7 +18,7 @@ if [ ! -x "$PHPEXEC" ]; then
 fi
 
 # Check if the consumer script exists
-CONSUMER_SCRIPT="/opt/sitb-ckg/consumer.php"
+CONSUMER_SCRIPT="$TARGET_DIR/consumer.php"
 if [ ! -f "$CONSUMER_SCRIPT" ]; then
     echo "Error: Consumer script not found: $CONSUMER_SCRIPT"
     exit 1

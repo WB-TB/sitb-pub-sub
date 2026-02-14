@@ -8,12 +8,7 @@ Boot::init(\PubSub\Consumer::class);
 // Create consumer instance
 $consumer = new \PubSub\Consumer(Boot::getConfig());
 $receiver = new \CKG\Receiver(Boot::getDatabase(), Boot::getSQLite(), Boot::getConfig());
+$info = $consumer->getSubscriptionInfo(); // Get subscription info
 
-// Show subscription info
-$info = $consumer->getSubscriptionInfo();
-echo "Subscription Info:\n";
-print_r($info);
-
-// Start continuous listener
 echo "\n--- Starting continuous listener ---\n";
 $consumer->listen([$receiver, 'prepare'], [$receiver, 'listen']);

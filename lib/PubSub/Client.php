@@ -162,7 +162,7 @@ class Client
             }
 
         } catch (\Exception $e) {
-            $this->logger->error("Error getting subscription info: " . $e->getMessage());
+            // $this->logger->debug("Getting subscription info: " . $e->getMessage());
             return [];
         }
     }

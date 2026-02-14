@@ -1,12 +1,10 @@
 #!/bin/bash
+# CKG Producer Script
 
 TARGET_DIR="/opt/sitb-ckg"
+LOG_DIR="/var/log/sitb-ckg"
+PHPEXEC=$(which php)
 
-# CKG Producer Script
-# Usage: $TARGET_DIR/ckg-producer [pubsub|api]
-
-# Check if PHP is installed
-PHPEXEC=`which php`
 if [ -z "$PHPEXEC" ]; then
     echo "Error: PHP not found."
     exit 1
@@ -44,7 +42,7 @@ fi
 
 # Set service-specific files
 PIDFILE="/var/run/ckg-producer-${SERVICE_TYPE}.pid"
-LOGFILE="/var/log/sitb-ckg/producer-${SERVICE_TYPE}.log"
+LOGFILE="$LOG_DIR/producer-${SERVICE_TYPE}.log"
 PRODUCER_SCRIPT="$TARGET_DIR/producer.php"
 
 # Check if producer script exists

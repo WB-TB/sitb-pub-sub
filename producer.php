@@ -28,7 +28,7 @@ if (isset($cliParams['end'])) {
 
 $updater = new \CKG\Updater(Boot::getDatabase(), Boot::getSQLite(), Boot::getConfig());
 if (isset($cliParams['mode']) && $cliParams['mode'] === 'pubsub') {
-    $updater->runPubSub('last', $end);
+    $updater->runPubSub($start, $end);
 } else {
     $updater->runApiClient($start, $end);
 }

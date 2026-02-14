@@ -226,9 +226,7 @@ class Updater
      * @param array $payload
      */
     private function sendApiRequest($apiClient, string $endpoint, array $payload) {
-        $response = $apiClient->post($endpoint, $payload, [
-            'Content-Type: application/json'
-        ]);
+        $response = $apiClient->post($endpoint, $payload);
 
         if ($response['http_code'] == 200 || $response['http_code'] == 201) {
             $this->logger->info("Successfully sent status pasien via API Client. Items count: " . count($payload));
@@ -243,7 +241,9 @@ class Updater
      * @param StatusPasien[] $data
      */
     private function saveOutgoingRecord(array $data) {
-        $ids = array_map(fn($item) => $item->terduga_id, $data);
+        $ids = array_map(function($item) {
+            return $item->terduga_id;
+        }, $data);
         $existing = $this->getExistingOutgoing($ids);
         $outgoingTable = $this->outgoingTable;
         $sqlInsert = "INSERT INTO {$outgoingTable} (terduga_id, updated_at) VALUES (?, datetime('now'))";

@@ -14,9 +14,9 @@ abstract class DbObject {
      */
     protected function convertGender(?string $gender): ?string
     {
-        if ($gender === 'Laki-laki' || $gender === 'L' || $gender === 'male' || $gender || 'Male') {
+        if ($gender === 'Laki-laki' || $gender === 'L' || $gender === 'male' || $gender === 'Male') {
             return '1'; // Male
-        } elseif ($gender === 'Perempuan' || $gender === 'P' || $gender === 'female' || $gender || 'Female') {
+        } elseif ($gender === 'Perempuan' || $gender === 'P' || $gender === 'female' || $gender === 'Female') {
             return '2'; // Female
         }
         
@@ -50,10 +50,11 @@ abstract class DbObject {
         } elseif (!empty($value)) {
             return '0';
         } else {
+            if (isset($default)) {
+                return $this->convertAdaRiwayatKontak($default);
+            }
             return '2';
         }
-        
-        return isset($default) ? $this->convertAdaRiwayatKontak($default) : null;
     }
     
     protected function convertJenisRiwayatKontak($value, $default = null): ?string {

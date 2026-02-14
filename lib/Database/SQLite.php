@@ -16,7 +16,7 @@ class SQLite {
     public function __construct(array $config) {
         $this->config = $config;
         $this->logger = \Boot::getLogger();
-        $this->databasePath = $config['pubsub']['database'] ?? __DIR__ . '/pubsub.sqlite';
+        $this->databasePath = isset($config['pubsub']['database']) ? $config['pubsub']['database'] : __DIR__ . '/pubsub.sqlite';
         $this->connect();
         $this->initializeTables();
     }

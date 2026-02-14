@@ -44,7 +44,7 @@ fi
 
 # Set service-specific files
 PIDFILE="/var/run/ckg-producer-${SERVICE_TYPE}.pid"
-LOGFILE="/var/log/ckg-producer-${SERVICE_TYPE}.log"
+LOGFILE="/var/log/sitb-ckg/producer-${SERVICE_TYPE}.log"
 PRODUCER_SCRIPT="$TARGET_DIR/producer.php"
 
 # Check if producer script exists
@@ -78,6 +78,7 @@ is_running() {
 echo "Starting CKG Producer (${SERVICE_TYPE})..."
 echo "Using PHP: $PHPEXEC"
 echo "Log file: $LOGFILE"
+echo "PID file: $PIDFILE"
 
 if is_running; then
     echo "Error: Producer is already running (PID: $(get_pid))"
@@ -85,21 +86,22 @@ if is_running; then
 fi
 
 # Start the producer in background with service type argument
-nohup "$PRODUCER_SCRIPT" "- --mode=$SERVICE_TYPE" >> "$LOGFILE" 2>&1 &
-local pid=$!
+CMD="php -f $PRODUCER_SCRIPT - --mode=$SERVICE_TYPE"
+echo "Run: $CMD"
+nohup $CMD 2>&1 &
+pid=$!
 
 # Save PID
+echo "Producer started with PID: $pid"
 echo $pid > "$PIDFILE"
 
 # Give it a moment to start
 sleep 2
 
 if is_running; then
-    echo "Producer started successfully (PID: $pid)"
-    echo "You can view logs with: tail -f $LOGFILE"
-    exit 0
+    echo "Producer still running"
 else
-    echo "Error: Failed to start producer"
     rm -f "$PIDFILE"
-    exit 1
 fi
+
+exit 0

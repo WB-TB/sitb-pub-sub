@@ -250,7 +250,6 @@ class Consumer extends Client
         $this->logger->info("Starting message listener...");
         $this->logger->info("Listening to subscription: {$this->subscriptionName}");
         $this->logger->info("Sleep time: {$sleepTime}s, Max messages per pull: {$maxMessages}");
-        $this->logger->info("Press Ctrl+C to stop");
 
         // Set up signal handlers for graceful shutdown if pcntl extension is available
         if (extension_loaded('pcntl')) {

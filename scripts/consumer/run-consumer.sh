@@ -4,6 +4,7 @@
 # Detects and uses the PHP executable specified in $PHPEXEC
 TARGET_DIR="/opt/sitb-ckg"
 LOG_DIR="/var/log/sitb-ckg"
+LOGFILE="$LOG_DIR/ckg-consumer.log"
 PHPEXEC=$(which php)
 
 if [ -z "$PHPEXEC" ]; then
@@ -27,7 +28,7 @@ fi
 PHPVERSION=$($PHPEXEC -r 'echo PHP_VERSION;')
 
 # Run the consumer
-echo "Stop service"
+echo "Stop service..." >> "$LOGFILE"
 echo "Starting consumer with PHP: $PHPEXEC"
 echo "Using PHP version: $PHPVERSION"
 echo "Consumer script: $CONSUMER_SCRIPT"

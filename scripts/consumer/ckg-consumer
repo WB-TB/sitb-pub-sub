@@ -149,7 +149,7 @@ do_stop() {
         for pid in $remaining; do
             kill -KILL "$pid" 2>/dev/null
         done
-        echo "Stop service" >> "$LOGFILE"
+        echo "Stop service..." >> "$LOGFILE"
         sleep 1
     fi
     

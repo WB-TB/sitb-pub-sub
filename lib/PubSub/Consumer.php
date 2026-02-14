@@ -147,9 +147,11 @@ class Consumer extends Client
 
         $subscription = $this->pubSubClient->subscription($this->subscriptionName);
         $rawMessages = [];
+        $acks = [];
         foreach ($messages as $message) {
             $rawMessages[$message->id()] = $message;
-            $subscription->acknowledge($message);
+            // $subscription->acknowledge($message);
+            $acks[$message->id()] = false;
         }
 
         // Inspeksi message sebelum diproses
@@ -172,6 +174,7 @@ class Consumer extends Client
                 if ($result === true) {
                     // Acknowledge the message if callback returns true
                     $processedCount++;
+                    $acks[$messageId] = true;
                     $this->logger->debug("Message processed and acknowledged. Data: {$messageData}");
                 } else {
                     $failedMessages[] = $message;
@@ -186,7 +189,12 @@ class Consumer extends Client
 
         // Acknowledge successfully processed messages in batch
         if ($processedCount > 0) {
-            $success = $this->acknowledge(array_slice($messages, 0, $processedCount));
+            // $success = $this->acknowledge(array_slice($messages, 0, $processedCount));
+            $validMessages = array_filter($messages, function($message) use ($acks) {
+                $messageId = $message->id();
+                return isset($acks[$messageId]) && $acks[$messageId];
+            });
+            $success = $this->acknowledge($validMessages);
             if (!$success) {
                 $this->logger->warning("Failed to acknowledge some processed messages");
             }

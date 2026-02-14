@@ -27,6 +27,7 @@ fi
 PHPVERSION=$($PHPEXEC -r 'echo PHP_VERSION;')
 
 # Run the consumer
+echo "Stop service"
 echo "Starting consumer with PHP: $PHPEXEC"
 echo "Using PHP version: $PHPVERSION"
 echo "Consumer script: $CONSUMER_SCRIPT"

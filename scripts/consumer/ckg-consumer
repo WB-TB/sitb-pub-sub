@@ -28,9 +28,10 @@ fi
 NAME="ckg-consumer"
 DESC="CKG Consumer Service"
 TARGET_DIR="/opt/sitb-ckg"
+LOG_DIR="/var/log/sitb-ckg"
 CONSUMER_SCRIPT="$TARGET_DIR/scripts/consumer/run-consumer.sh"
 PIDFILE="/var/run/${NAME}.pid"
-LOGFILE="/var/log/${NAME}.log"
+LOGFILE="$LOG_DIR/${NAME}.log"
 
 # Check if consumer script exists
 if [ ! -f "$CONSUMER_SCRIPT" ]; then
@@ -148,6 +149,7 @@ do_stop() {
         for pid in $remaining; do
             kill -KILL "$pid" 2>/dev/null
         done
+        echo "Stop service" >> "$LOGFILE"
         sleep 1
     fi
     

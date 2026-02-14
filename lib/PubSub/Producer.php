@@ -30,10 +30,6 @@ class Producer extends Client
      */
     public function publish($messageData, $attributes = [])
     {
-        if (!$this->ensureTopicExists()) {
-            return false;
-        }
-
         // Validate message data
         if (empty($messageData)) {
             $this->logger->warning("Message data cannot be empty");

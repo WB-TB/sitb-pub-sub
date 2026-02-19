@@ -93,8 +93,16 @@ class TaSkrining
         $columns = array_keys($data);
         $placeholders = array_fill(0, count($data), '?');
         
-        $sql = "INSERT INTO {$this->tableName} (" . implode(', ', $columns) . ", insert_at, update_at)
-                VALUES (" . implode(', ', $placeholders) . ", NOW(), NOW())";
+        if (!in_array('insert_at', $columns)) {
+            $columns[] = 'insert_at';
+            $placeholders[] = 'NOW()';
+        }
+        if (!in_array('update_at', $columns)) {
+            $columns[] = 'update_at';
+            $placeholders[] = 'NOW()';
+        }
+        $sql = "INSERT INTO {$this->tableName} (" . implode(', ', $columns) . ")
+                VALUES (" . implode(', ', $placeholders) . ")";
         
         $stmt = $this->db->prepare($sql);
         $stmt->execute(array_values($data));
@@ -118,7 +126,9 @@ class TaSkrining
         foreach ($data as $key => $value) {
             $setClauses[] = "{$key} = ?";
         }
-        $setClauses[] = "update_at = NOW()";
+        if (!isset($data['update_at'])) {
+            $setClauses[] = "update_at = NOW()";
+        }
         
         $sql = "UPDATE {$this->tableName} SET " . implode(', ', $setClauses) . " WHERE id = ?";
         

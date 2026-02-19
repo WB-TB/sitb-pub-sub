@@ -177,6 +177,13 @@ class SkriningCKG extends TbObject
             $this->tindak_lanjut_tb = 'Dirujuk Untuk Pemeriksaan TB';
         }
 
+        if (isset($this->hasil_berat_badan) && $this->hasil_berat_badan > 0 &&
+            isset($this->hasil_tinggi_badan) && $this->hasil_tinggi_badan > 0) {
+            $this->hasil_imt = $this->hasil_berat_badan / (($this->hasil_tinggi_badan / 100) * ($this->hasil_tinggi_badan / 100));
+        }else {
+            $this->hasil_imt = null;
+        }
+
         $return = [
             'tgl_skrining' => $this->periksa_tgl,
             'kegiatan_id' => '99',

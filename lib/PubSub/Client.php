@@ -34,9 +34,31 @@ class Client
         putenv("GOOGLE_CLOUD_PROJECT=" . $this->projectId);
         $credentialsPath = $this->config['google_cloud']['credentials_path'];
         if (file_exists($credentialsPath)) {
-            // $jsonKey = json_decode(file_get_contents($credentialsPath), true);
-            // $clientConfig['keyFile'] = $jsonKey;
-            putenv("GOOGLE_APPLICATION_CREDENTIALS=" . $credentialsPath);
+            $encryptKey = $this->config['google_cloud']['encrypt_key'] ?? null;
+            if ($encryptKey) {
+                $encryptedContent = file_get_contents($credentialsPath);
+                $decryptedContent = $this->decryptCredentials($encryptedContent, $encryptKey);
+                
+                if ($decryptedContent === false) {
+                    throw new Exception("Failed to decrypt credentials file at: {$credentialsPath}");
+                }
+                
+                // Write decrypted content to a temporary file
+                $tempCredentialsPath = sys_get_temp_dir() . '/google_credentials_' . uniqid() . '.json';
+                file_put_contents($tempCredentialsPath, $decryptedContent);
+                
+                // Set environment variable to use the temporary decrypted file
+                putenv("GOOGLE_APPLICATION_CREDENTIALS=" . $tempCredentialsPath);
+                
+                // Register cleanup function to delete temp file on shutdown
+                register_shutdown_function(function() use ($tempCredentialsPath) {
+                    if (file_exists($tempCredentialsPath)) {
+                        @unlink($tempCredentialsPath);
+                    }
+                });
+            } else {
+                putenv("GOOGLE_APPLICATION_CREDENTIALS=" . $credentialsPath);
+            }
         }else {
             throw new Exception("Credentials file not found at: {$credentialsPath}");
         }
@@ -49,6 +71,66 @@ class Client
 
         $class = basename(str_replace('\\', '/', get_class($this)));
         $this->logger->info($class . " initialized for topic: {$topicName}, subscription: {$subscriptionName}:");
+    }
+
+    /**
+     * Decrypt credentials file content using AES-256-CBC
+     *
+     * @param string $encryptedContent The encrypted content
+     * @param string $encryptKey The encryption key
+     * @return string|false The decrypted content or false on failure
+     */
+    protected function decryptCredentials(string $encryptedContent, string $encryptKey)
+    {
+        try {
+            // Decode base64 encrypted content
+            $encryptedData = base64_decode($encryptedContent);
+            
+            if ($encryptedData === false) {
+                $this->logger->error("Failed to decode base64 encrypted content");
+                return false;
+            }
+            
+            // Extract IV (first 16 bytes for AES-256-CBC)
+            $ivLength = openssl_cipher_iv_length('AES-256-CBC');
+            if (strlen($encryptedData) < $ivLength) {
+                $this->logger->error("Encrypted data is too short to contain IV");
+                return false;
+            }
+            
+            $iv = substr($encryptedData, 0, $ivLength);
+            $ciphertext = substr($encryptedData, $ivLength);
+            
+            // Derive a 32-byte key from the provided key
+            $key = hash('sha256', $encryptKey, true);
+            
+            // Decrypt the content
+            $decrypted = openssl_decrypt(
+                $ciphertext,
+                'AES-256-CBC',
+                $key,
+                OPENSSL_RAW_DATA,
+                $iv
+            );
+            
+            if ($decrypted === false) {
+                $this->logger->error("Failed to decrypt credentials: " . openssl_error_string());
+                return false;
+            }
+            
+            // Validate that the decrypted content is valid JSON
+            json_decode($decrypted);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $this->logger->error("Decrypted content is not valid JSON: " . json_last_error_msg());
+                return false;
+            }
+            
+            return $decrypted;
+            
+        } catch (\Exception $e) {
+            $this->logger->error("Exception during decryption: " . $e->getMessage());
+            return false;
+        }
     }
 
     /**

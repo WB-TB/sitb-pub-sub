@@ -85,15 +85,25 @@ check_php() {
     echo " + Checking PHP extensions..."
 
     # Required extensions
-    REQUIRED_EXTENSIONS="pdo pdo_mysql pdo_sqlite"
+    REQUIRED_EXTENSIONS="pdo pdo_mysql pdo_sqlite openssl"
     MISSING_REQUIRED=""
 
     for ext in $REQUIRED_EXTENSIONS; do
         if $PHPEXEC -r "if (!extension_loaded('$ext')) exit(1);" 2>/dev/null; then
             echo "   -> [OK] Required extension '$ext' is installed"
         else
-            echo "   -> [ERROR] Required extension '$ext' is NOT installed"
-            MISSING_REQUIRED="$MISSING_REQUIRED $ext"
+            # Try to install the missing extension
+            # echo "   -> [WARNING] Required extension '$ext' is NOT installed, attempting to install..."
+            
+            res=$(install_package "$ext")
+
+            # Check if installation was successful
+            if $PHPEXEC -r "if (!extension_loaded('$ext')) exit(1);" 2>/dev/null; then
+                echo "   -> [OK] Extension '$ext' installed successfully"
+            else
+                echo "   -> [ERROR] Failed to install extension '$ext'"
+                MISSING_REQUIRED="$MISSING_REQUIRED $ext"
+            fi
         fi
     done
 
@@ -122,6 +132,76 @@ check_composer() {
         echo " + [WARNING]: Composer is not installed. Composer will be installed locally."
         curl -sS https://getcomposer.org/installer | $PHPEXEC
     fi
+}
+
+install_package() {
+    local ext=$1
+    local MISSING_REQUIRED=""
+    # Detect package manager and install the extension
+    if command -v apt-get >/dev/null 2>&1; then
+        # Debian/Ubuntu based systems
+        case "$ext" in
+            pdo)
+                apt-get install -y php-pdo >/dev/null 2>&1
+                ;;
+            pdo_mysql)
+                apt-get install -y php-mysql >/dev/null 2>&1
+                ;;
+            pdo_sqlite)
+                apt-get install -y php-sqlite3 >/dev/null 2>&1
+                ;;
+            openssl)
+                apt-get install -y php-openssl >/dev/null 2>&1 || apt-get install -y php-common >/dev/null 2>&1
+                ;;
+            *)
+                apt-get install -y "php-$ext" >/dev/null 2>&1
+                ;;
+        esac
+    elif command -v yum >/dev/null 2>&1; then
+        # RHEL/CentOS based systems
+        case "$ext" in
+            pdo)
+                yum install -y php-pdo >/dev/null 2>&1
+                ;;
+            pdo_mysql)
+                yum install -y php-mysqlnd >/dev/null 2>&1
+                ;;
+            pdo_sqlite)
+                yum install -y php-sqlite3 >/dev/null 2>&1
+                ;;
+            openssl)
+                yum install -y php-openssl >/dev/null 2>&1 || yum install -y php-common >/dev/null 2>&1
+                ;;
+            *)
+                yum install -y "php-$ext" >/dev/null 2>&1
+                ;;
+        esac
+    elif command -v dnf >/dev/null 2>&1; then
+        # Fedora based systems
+        case "$ext" in
+            pdo)
+                dnf install -y php-pdo >/dev/null 2>&1
+                ;;
+            pdo_mysql)
+                dnf install -y php-mysqlnd >/dev/null 2>&1
+                ;;
+            pdo_sqlite)
+                dnf install -y php-sqlite3 >/dev/null 2>&1
+                ;;
+            openssl)
+                dnf install -y php-openssl >/dev/null 2>&1 || dnf install -y php-common >/dev/null 2>&1
+                ;;
+            *)
+                dnf install -y "php-$ext" >/dev/null 2>&1
+                ;;
+        esac
+    else
+        echo "   -> [ERROR] Unable to detect package manager to install '$ext'"
+        MISSING_REQUIRED="$ext"
+        continue
+    fi
+
+    echo $MISSING_REQUIRED
 }
 
 install_or_update() {

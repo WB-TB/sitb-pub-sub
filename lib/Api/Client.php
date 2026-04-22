@@ -134,7 +134,8 @@ class Client
         } catch (Exception $e) {
             $this->logger->error("POST Request Failed: " . $e->getMessage(), [
                 'endpoint' => $endpoint,
-                'data' => $data
+                'data' => $data,
+                'response' => $response,
             ]);
             throw $e;
         }

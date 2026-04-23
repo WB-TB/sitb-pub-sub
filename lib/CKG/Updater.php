@@ -47,19 +47,50 @@ class Updater
         try {
             $this->logger->info("Update data dari PubSub producer mulai {$start} sampai {$end}");
 
-            $data = $this->fetchFromDatabase($start, $end);
+            list ($start, $end, $limit) = $this->prepareParameters($start, $end);
 
-            $messages = $this->buildMessages($data);
-
-            // Publikasikan pesan menggunakan producer
-            if (count($messages) > 0) {
-                $this->producer->publishBatch($messages, [
-                    'source' => 'sitb-ckg',
-                    'priority' => 'high',
-                    'timestamp' => (string) time(),
-                    'environment' => $this->config['environment']
-                ]);
+            // hitung dulu jumlah laporan SO dan RO
+            $countSo = $this->laporan->getData(LapTbc03::TYPE_SO, $start, $end, true);
+            $countRo = $this->laporan->getData(LapTbc03::TYPE_RO, $start, $end, true);
+            if ($countSo <= 0 && $countRo <= 0) {
+                $this->logger->info("Tidak ada data untuk diproses");
+                return;
             }
+
+            $totalData = $countSo + $countRo;
+            $sentData = 0;
+            $offsetSo = 0;
+            $offsetRo = 0;
+            $iteration = 0;
+
+            while ($offsetSo <= $countSo || $offsetRo <= $countRo) {
+                list ($data, $offsetSo, $offsetRo) = $this->fetchFromDatabase($start, $end, $limit, $countSo, $offsetSo, $countRo, $offsetRo);
+                if (empty($data)) {
+                    break;
+                }
+
+                $messages = $this->buildMessages($data);
+                // Publikasikan pesan menggunakan producer
+                if (count($messages) > 0) {
+                    $this->producer->publishBatch($messages, [
+                        'source' => 'sitb-ckg',
+                        'priority' => 'high',
+                        'timestamp' => (string) time(),
+                        'environment' => $this->config['environment']
+                    ]);
+                }
+
+                $sentData += count($data);
+                $iteration++;
+
+                if ($iteration % 5 == 0) {
+                    $progress = round(($sentData / $totalData) * 100, 2);
+                    $this->logger->info("Progress: {$progress}% ({$sentData}/{$totalData})");
+                    sleep(1);
+                }
+            }
+
+            $this->logger->info("Selesai mengirim {$sentData} data");
         } catch (\Exception $e) {
             $this->logger->error("Error in PubSub producer: " . $e->getMessage());
         }
@@ -73,21 +104,47 @@ class Updater
     public function runApiClient($start, $end) {
         try {
             $this->logger->info("Update data dari API Client mulai {$start} sampai {$end}");
-            $data = $this->fetchFromDatabase($start, $end);
-            $this->sendViaApiClient($data);
+            list ($start, $end, $limit) = $this->prepareParameters($start, $end);
 
-            $this->saveOutgoingRecord($data);
+            // hitung dulu jumlah laporan SO dan RO
+            $countSo = $this->laporan->getData(LapTbc03::TYPE_SO, $start, $end, true);
+            $countRo = $this->laporan->getData(LapTbc03::TYPE_RO, $start, $end, true);
+            if ($countSo <= 0 && $countRo <= 0) {
+                $this->logger->info("Tidak ada data untuk diproses");
+                return;
+            }
+
+            $totalData = $countSo + $countRo;
+            $sentData = 0;
+            $offsetSo = 0;
+            $offsetRo = 0;
+            $iteration = 0;
+
+            while ($offsetSo <= $countSo || $offsetRo <= $countRo) {
+                list ($data, $offsetSo, $offsetRo) = $this->fetchFromDatabase($start, $end, $limit, $countSo, $offsetSo, $countRo, $offsetRo);
+                if (empty($data)) {
+                    break;
+                }
+
+                $this->sendViaApiClient($data);
+                $this->saveOutgoingRecord($data);
+                $sentData += count($data);
+                $iteration++;
+
+                if ($iteration % 5 == 0) {
+                    $progress = round(($sentData / $totalData) * 100, 2);
+                    $this->logger->info("Progress: {$progress}% ({$sentData}/{$totalData})");
+                    sleep(1);
+                }
+            }
+
+            $this->logger->info("Selesai mengirim {$sentData} data");
         } catch (\Exception $e) {
             $this->logger->error("Error in API Client call: " . $e->getMessage());
         }
     }
 
-    /**
-     * Fetch data from database to be sent as messages
-     * 
-     * @return StatusPasien[]
-     */
-    private function fetchFromDatabase($start, $end, $mode = 'api', $limit = 0): array {
+    private function prepareParameters($start, $end, $mode = 'api', $limit = 0) : array {
         if ($mode == 'pubsub')
             $this->removePubSubMessages();
 
@@ -104,28 +161,45 @@ class Updater
         if ($limit < 1) {
             $limit = $this->config['producer']['batch_size'];
         }
-        
+
+        return [$start, $end, $limit];
+    }
+
+    /**
+     * Fetch data from database to be sent as messages
+     * 
+     * @return StatusPasien[]
+     */
+    private function fetchFromDatabase($start, $end, $mode = 'api', $limit = 0, $countSo = 0, $offsetSo = 0, $countRo = 0, $offsetRo = 0): array {
         $status = [];
 
         // Proses SO
-        $statusSo = $this->laporan->getData(LapTbc03::TYPE_SO, $start, $end, false, $limit);
-        foreach ($statusSo as $item) {
-            $item['jenis_pasien'] = 'TBC SO';
-            $statusPasien = new StatusPasien();
-            $statusPasien->fromDbRecord($item);
-            $status[] = $statusPasien;
+        if ($offsetSo <= $countSo) {
+            $statusSo = $this->laporan->getData(LapTbc03::TYPE_SO, $start, $end, false, $limit, $offsetSo);
+            foreach ($statusSo as $item) {
+                $item['jenis_pasien'] = 'TBC SO';
+                $statusPasien = new StatusPasien();
+                $statusPasien->fromDbRecord($item);
+                $status[] = $statusPasien;
+            }
+            $this->logger->debug("Sending TB SO " . count($statusSo) . " items [LIMIT: $limit, SKIP: $offsetSo]");
+
+            $offsetSo = $offsetSo + $limit;
         }
-        $this->logger->debug("Sending TB SO " . count($status) . " items");
 
         // Proses RO
-        $statusRo = $this->laporan->getData(LapTbc03::TYPE_RO, $start, $end, false, $limit);
-        foreach ($statusRo as $item) {
-            $item['jenis_pasien'] = 'TBC RO';
-            $statusPasien = new StatusPasien();
-            $statusPasien->fromDbRecord($item);
-            $status[] = $statusPasien;
+        if ($offsetRo <= $countRo) {
+            $statusRo = $this->laporan->getData(LapTbc03::TYPE_RO, $start, $end, false, $limit, $offsetRo);
+            foreach ($statusRo as $item) {
+                $item['jenis_pasien'] = 'TBC RO';
+                $statusPasien = new StatusPasien();
+                $statusPasien->fromDbRecord($item);
+                $status[] = $statusPasien;
+            }
+            $this->logger->debug("Sending TB RO " . count($statusRo) . " items [LIMIT: $limit, SKIP: $offsetRo]");
+
+            $offsetRo = $offsetRo + $limit;
         }
-        $this->logger->debug("Sending TB RO " . count($status) . " items");
 
         // $statusPasien = new StatusPasien();
         // $status[] = $statusPasien->fromArray([
@@ -140,7 +214,7 @@ class Updater
         //     'hasil_akhir' => null
         // ]);
 
-        return $status;
+        return [$status, $offsetSo, $offsetRo];
     }
 
     private function getLastOutgoing() {

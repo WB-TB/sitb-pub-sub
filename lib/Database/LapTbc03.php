@@ -37,20 +37,21 @@ class LapTbc03
      * @param string $end datetime sampai
      * @return array|int
      */
-    public function getData(int $type, string $start, string $end, bool $count = false, int $limit = 1000)
+    public function getData(int $type, string $start, string $end, bool $count = false, int $limit = 1000, $offset = 0)
     {
         $tableName = $type == self::TYPE_RO ? $this->tableNameRo : $this->tableNameSo;
         if ($count) {
-            $sql = "SELECT COUNT(*) jumlah FROM {$tableName} WHERE update_at > ? and update_at <= ? LIMIT ?";
+            $sql = "SELECT COUNT(*) jumlah FROM {$tableName} WHERE update_at > ? and update_at <= ?";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$start, $end, $limit]);
+            // $stmt->execute([$start, $end, $limit]);
+            $stmt->execute([$start, $end]);
             $result = $stmt->fetch(\PDO::FETCH_COLUMN);
 
             return intval($result);
         } else {
-            $sql = "SELECT * FROM {$tableName} WHERE update_at > ? and update_at <= ? LIMIT ?";
+            $sql = "SELECT * FROM {$tableName} WHERE update_at > ? and update_at <= ? LIMIT ?, ?";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$start, $end, $limit]);
+            $stmt->execute([$start, $end, $offset, $limit]);
             $result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             
             return $result ? $result : [];

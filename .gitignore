@@ -1,5 +1,6 @@
 vendor/
 logs/
-config.php
+config*.php
+config.example.php
 **/pubsub*.sqlite*
 credentials*
